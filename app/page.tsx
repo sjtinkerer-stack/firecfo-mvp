@@ -5,12 +5,14 @@ import { motion } from "framer-motion";
 import { Flame, TrendingUp, Bot, Receipt, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AnimatedBackground } from "@/components/ui/animated-background";
+import { LandingNav } from "@/components/ui/landing-nav";
 
 export default function Home() {
   return (
     <AnimatedBackground variant="landing">
-      <div className="flex min-h-screen flex-col items-center justify-center p-4">
-        <main className="flex flex-col items-center justify-center text-center space-y-12 max-w-6xl mx-auto px-4 py-20">
+      <LandingNav />
+      <div className="flex min-h-screen flex-col items-center justify-center p-4 pt-20">
+        <main className="flex flex-col items-center justify-center text-center space-y-8 max-w-6xl mx-auto px-4 py-12">
           {/* Logo & Brand */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
@@ -31,7 +33,7 @@ export default function Home() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="space-y-6"
           >
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white leading-tight">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-tight">
               Your AI CFO for
               <br />
               <span className="text-gradient-hero">Financial Freedom</span>
@@ -45,12 +47,44 @@ export default function Home() {
             </p>
           </motion.div>
 
+          {/* CTA Buttons - Above the fold */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="flex flex-col items-center gap-6"
+          >
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Link href="/signup">
+                <Button
+                  size="lg"
+                  className="btn-gradient text-white text-lg px-10 py-7 rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 group"
+                >
+                  Start Your FIRE Journey
+                  <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </Link>
+              <Link href="/login">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="text-lg px-10 py-7 rounded-xl border-2 border-white/30 text-white hover:bg-white/10 hover:border-white/50 hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+                >
+                  Log In
+                </Button>
+              </Link>
+            </div>
+            <p className="text-sm text-gray-400 dark:text-gray-500">
+              Free forever • No credit card required • Setup in 2 minutes
+            </p>
+          </motion.div>
+
           {/* Feature Cards */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl mt-16"
+            transition={{ duration: 0.6, delay: 0.6 }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl mt-8"
           >
             {/* Track Net Worth */}
             <motion.div
@@ -102,38 +136,6 @@ export default function Home() {
                 Maximize your savings with intelligent Indian tax regime calculations
               </p>
             </motion.div>
-          </motion.div>
-
-          {/* CTA Buttons */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
-            className="flex flex-col items-center gap-6 mt-12"
-          >
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Link href="/signup">
-                <Button
-                  size="lg"
-                  className="btn-gradient text-white text-lg px-10 py-7 rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 group"
-                >
-                  Start Your FIRE Journey
-                  <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </Link>
-              <Link href="/login">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="text-lg px-10 py-7 rounded-xl border-2 border-white/30 text-white hover:bg-white/10 hover:border-white/50 hover:scale-105 transition-all duration-300 backdrop-blur-sm"
-                >
-                  Log In
-                </Button>
-              </Link>
-            </div>
-            <p className="text-sm text-gray-400">
-              Free forever • No credit card required • Setup in 2 minutes
-            </p>
           </motion.div>
         </main>
       </div>

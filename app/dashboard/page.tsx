@@ -11,34 +11,64 @@ export default function DashboardPage() {
   const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const [hasChecked, setHasChecked] = useState(false)
 
   useEffect(() => {
+    // Prevent duplicate checks
+    if (hasChecked) return
+
     const checkUser = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser()
 
         if (!user) {
+          setLoading(false)
           router.push('/login')
           return
         }
 
+        // Check if user has completed onboarding
+        const { data: profile, error } = await supabase
+          .from('user_profiles')
+          .select('onboarding_completed')
+          .eq('id', user.id)
+          .single()
+
+        // If profile fetch fails or doesn't exist, redirect to onboarding
+        if (error || !profile) {
+          console.log('No profile found or error, redirecting to onboarding')
+          setLoading(false)
+          router.push('/onboarding?step=1')
+          return
+        }
+
+        // If onboarding not completed, redirect to onboarding
+        if (!profile.onboarding_completed) {
+          console.log('Onboarding not completed, redirecting to onboarding')
+          setLoading(false)
+          router.push('/onboarding?step=1')
+          return
+        }
+
+        // All checks passed - user can access dashboard
         setUser(user)
+        setLoading(false)
+        setHasChecked(true)
       } catch (error) {
         console.error('Error checking user:', error)
-        router.push('/login')
-      } finally {
         setLoading(false)
+        router.push('/login')
       }
     }
 
     checkUser()
+  }, [router, hasChecked])
 
-    // Listen for auth changes
+  // Listen for auth changes separately
+  useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session) {
         router.push('/login')
-      } else {
-        setUser(session.user)
       }
     })
 

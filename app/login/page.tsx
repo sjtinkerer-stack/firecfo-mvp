@@ -66,8 +66,19 @@ export default function LoginPage() {
       if (error) throw error
 
       if (data.user) {
-        // Success - redirect to dashboard
-        router.push('/dashboard')
+        // Check if user has completed onboarding
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('onboarding_completed')
+          .eq('id', data.user.id)
+          .single()
+
+        // Redirect based on onboarding status
+        if (profile && profile.onboarding_completed) {
+          router.push('/dashboard')
+        } else {
+          router.push('/onboarding?step=1')
+        }
       }
     } catch (error: any) {
       setError(error.message || 'An error occurred during login')
@@ -85,7 +96,7 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/dashboard`,
+          redirectTo: `${window.location.origin}/auth/callback`,
         },
       })
 
@@ -128,7 +139,7 @@ export default function LoginPage() {
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md"
+                    className="p-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800/50 rounded-md"
                   >
                     {error}
                   </motion.div>
@@ -227,7 +238,7 @@ export default function LoginPage() {
                       <motion.p
                         initial={{ opacity: 0, y: -5 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="text-sm text-red-600"
+                        className="text-sm text-red-600 dark:text-red-400"
                       >
                         {fieldErrors.email}
                       </motion.p>
@@ -267,7 +278,7 @@ export default function LoginPage() {
                       <motion.p
                         initial={{ opacity: 0, y: -5 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="text-sm text-red-600"
+                        className="text-sm text-red-600 dark:text-red-400"
                       >
                         {fieldErrors.password}
                       </motion.p>
@@ -314,7 +325,7 @@ export default function LoginPage() {
             </Card>
 
             {/* Security badge */}
-            <p className="text-center text-sm text-gray-400 mt-6">
+            <p className="text-center text-sm text-gray-400 dark:text-gray-500 mt-6">
               🔒 Your data is encrypted and secure
             </p>
           </motion.div>
