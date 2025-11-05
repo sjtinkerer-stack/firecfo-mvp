@@ -162,7 +162,7 @@ export function OnboardingWizard() {
 
         // Loading complete
         setIsInitialLoading(false)
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Error loading user data:', error)
         setIsInitialLoading(false)
       }
@@ -307,7 +307,7 @@ export function OnboardingWizard() {
             console.error('Error marking onboarding complete:', error)
           }
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Error completing onboarding:', error)
       } finally {
         setIsSubmitting(false)

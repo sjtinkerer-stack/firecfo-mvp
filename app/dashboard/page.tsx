@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import type { User } from '@supabase/supabase-js'
+import type { User, AuthChangeEvent, Session } from '@supabase/supabase-js'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -54,7 +54,7 @@ export default function DashboardPage() {
         setUser(user)
         setLoading(false)
         setHasChecked(true)
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Error checking user:', error)
         setLoading(false)
         router.push('/login')
@@ -66,7 +66,7 @@ export default function DashboardPage() {
 
   // Listen for auth changes separately
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_: AuthChangeEvent, session: Session | null) => {
       if (!session) {
         router.push('/login')
       }
@@ -81,7 +81,7 @@ export default function DashboardPage() {
     try {
       await supabase.auth.signOut()
       router.push('/')
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error logging out:', error)
     }
   }

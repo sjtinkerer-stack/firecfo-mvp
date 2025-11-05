@@ -85,7 +85,7 @@ export async function GET(request: Request) {
     // Only redirect to dashboard if we're certain onboarding is completed
     return NextResponse.redirect(new URL('/dashboard', requestUrl.origin))
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Unexpected error in auth callback:', error)
     // On unexpected errors, redirect to login
     return NextResponse.redirect(new URL('/login?error=unexpected', requestUrl.origin))
