@@ -25,6 +25,12 @@ export function useAutoSave(
   const [error, setError] = useState<Error | null>(null)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   const previousDataRef = useRef<string>('')
+  const dataRef = useRef(data) // Store latest data in ref
+
+  // Update data ref whenever data changes
+  useEffect(() => {
+    dataRef.current = data
+  }, [data])
 
   const saveToDatabase = useCallback(async () => {
     if (!enabled) return
@@ -33,6 +39,11 @@ export function useAutoSave(
     setError(null)
 
     try {
+      // Use data from ref instead of closure
+      const currentData = dataRef.current
+      // DEBUG: Log raw data received
+      console.log('🔍 DEBUG [Auto-save]: Raw data received:', currentData)
+
       // Get current user
       const {
         data: { user },
@@ -44,7 +55,7 @@ export function useAutoSave(
 
       // Filter out undefined, null, and empty string values
       // Keep 0 values for numeric fields (spouse_income, dependents are valid as 0)
-      const cleanedData = Object.entries(data).reduce((acc, [key, value]) => {
+      const cleanedData = Object.entries(currentData).reduce((acc, [key, value]) => {
         // Skip undefined, null, or empty string values
         if (value === undefined || value === null || value === '') {
           return acc
@@ -58,25 +69,35 @@ export function useAutoSave(
         return acc
       }, {} as Record<string, any>)
 
+      // DEBUG: Log cleaned data
+      console.log('🔍 DEBUG [Auto-save]: Cleaned data after filtering:', cleanedData)
+
       // Only proceed if there's at least one field to save
       if (Object.keys(cleanedData).length === 0) {
         setIsSaving(false)
         return
       }
 
+      // Prepare data for upsert
+      const upsertData = {
+        id: user.id,
+        ...cleanedData,
+        updated_at: new Date().toISOString(),
+      }
+
+      // DEBUG: Log what we're sending
+      console.log('🔍 DEBUG: Attempting upsert with data:', upsertData)
+
       // Upsert user profile data
-      const { error: saveError } = await supabase
+      const { data: upsertResult, error: saveError } = await supabase
         .from('user_profiles')
-        .upsert(
-          {
-            id: user.id,
-            ...cleanedData,
-            updated_at: new Date().toISOString(),
-          },
-          {
-            onConflict: 'id',
-          }
-        )
+        .upsert(upsertData, {
+          onConflict: 'id',
+        })
+        .select()
+
+      // DEBUG: Log the result
+      console.log('🔍 DEBUG: Upsert result:', { data: upsertResult, error: saveError })
 
       if (saveError) {
         // Enhance error message with more details
@@ -85,6 +106,15 @@ export function useAutoSave(
         )
         throw enhancedError
       }
+
+      // DEBUG: Verify the data was actually saved by fetching it back
+      const { data: verifyData, error: verifyError } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single()
+
+      console.log('🔍 DEBUG: Verification query result:', { data: verifyData, error: verifyError })
 
       setLastSaved(new Date())
       onSave?.()
@@ -102,17 +132,34 @@ export function useAutoSave(
     } finally {
       setIsSaving(false)
     }
-  }, [data, enabled, onSave, onError])
+  }, [enabled, onSave, onError]) // Removed 'data' from dependencies - using dataRef instead
 
   // Debounced auto-save
   useEffect(() => {
-    if (!enabled) return
+    console.log('🔍 DEBUG [Auto-save useEffect]: Triggered', { enabled, data })
+
+    if (!enabled) {
+      console.log('🔍 DEBUG [Auto-save useEffect]: Skipped - not enabled')
+      return
+    }
 
     // Check if data has changed
     const currentData = JSON.stringify(data)
-    if (currentData === previousDataRef.current) return
+    const previousData = previousDataRef.current
+
+    console.log('🔍 DEBUG [Auto-save useEffect]: Data comparison', {
+      currentData,
+      previousData,
+      areSame: currentData === previousData
+    })
+
+    if (currentData === previousDataRef.current) {
+      console.log('🔍 DEBUG [Auto-save useEffect]: Skipped - data unchanged')
+      return
+    }
 
     previousDataRef.current = currentData
+    console.log('🔍 DEBUG [Auto-save useEffect]: Data changed! Scheduling save in', delay, 'ms')
 
     // Clear existing timeout
     if (timeoutRef.current) {
@@ -121,6 +168,7 @@ export function useAutoSave(
 
     // Set new timeout
     timeoutRef.current = setTimeout(() => {
+      console.log('🔍 DEBUG [Auto-save useEffect]: Timeout completed, calling saveToDatabase')
       saveToDatabase()
     }, delay)
 

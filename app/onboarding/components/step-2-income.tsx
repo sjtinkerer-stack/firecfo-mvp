@@ -33,6 +33,7 @@ export function Step2Income({ form, navigationDirection }: Step2IncomeProps) {
   const [isIncomeCustom, setIsIncomeCustom] = useState(false)
   const [isSpouseIncomeCustom, setIsSpouseIncomeCustom] = useState(false)
 
+  // Watch form values for reactivity
   const monthlyIncome = form.watch('monthly_income') || 0
   const spouseIncome = form.watch('spouse_income') || 0
   const maritalStatus = form.watch('marital_status')

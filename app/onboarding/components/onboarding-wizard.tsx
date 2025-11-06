@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
@@ -53,20 +53,40 @@ export function OnboardingWizard() {
     mode: 'onChange',
   })
 
-  // Get form data for auto-save
-  const formData = form.watch()
+  // Get form data for auto-save - watch specific fields instead of entire form
+  const age = useWatch({ control: form.control, name: 'age' })
+  const city = useWatch({ control: form.control, name: 'city' })
+  const marital_status = useWatch({ control: form.control, name: 'marital_status' })
+  const dependents = useWatch({ control: form.control, name: 'dependents' })
+  const monthly_income = useWatch({ control: form.control, name: 'monthly_income' })
+  const spouse_income = useWatch({ control: form.control, name: 'spouse_income' })
+
+  // Combine watched fields into formData object
+  const formData = {
+    age,
+    city,
+    marital_status,
+    dependents,
+    monthly_income,
+    spouse_income,
+  }
+
+  // DEBUG: Track formData changes
+  useEffect(() => {
+    console.log('🔍 DEBUG [Wizard]: formData changed:', formData)
+  }, [age, city, marital_status, dependents, monthly_income, spouse_income])
 
   // Auto-save hook
-  const { isSaving, lastSaved, error: saveError } = useAutoSave(
+  const { isSaving, lastSaved, error: saveError, saveNow } = useAutoSave(
     formData,
     true, // enabled
     {
       delay: 1000, // 1 second debounce
       onSave: () => {
-        console.log('Data auto-saved successfully')
+        console.log('✅ Data auto-saved successfully')
       },
       onError: (error) => {
-        console.error('Auto-save failed:', error)
+        console.error('❌ Auto-save failed:', error)
       },
     }
   )
@@ -280,6 +300,16 @@ export function OnboardingWizard() {
     if (!isValid) {
       console.log('Validation failed. Errors:', form.formState.errors)
       return
+    }
+
+    // CRITICAL: Save data before navigating to ensure it's persisted
+    console.log('🔍 DEBUG: Manually saving before navigation...')
+    try {
+      await saveNow()
+      console.log('✅ Manual save completed')
+    } catch (error) {
+      console.error('❌ Manual save failed:', error)
+      // Continue anyway - auto-save might have already saved it
     }
 
     // Mark current step as completed

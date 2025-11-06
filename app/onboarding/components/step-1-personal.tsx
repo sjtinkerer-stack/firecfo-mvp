@@ -60,6 +60,7 @@ const getFeedback = {
 }
 
 export function Step1Personal({ form, navigationDirection }: Step1PersonalProps) {
+  // Watch form values for reactivity
   const age = form.watch('age')
   const city = form.watch('city')
   const maritalStatus = form.watch('marital_status')
