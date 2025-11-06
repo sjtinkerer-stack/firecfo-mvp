@@ -41,6 +41,22 @@ export function Step2Income({ form, navigationDirection }: Step2IncomeProps) {
   const totalHouseholdIncome = monthlyIncome + spouseIncome
   const annualIncome = totalHouseholdIncome * 12
 
+  // Initialize custom states based on saved form values
+  useEffect(() => {
+    const validIncomeOptions = ['50000', '100000', '200000', '500000']
+    const validSpouseOptions = ['0', '50000', '100000', '200000']
+
+    // Check if monthly income is a custom value
+    if (monthlyIncome > 0 && !validIncomeOptions.includes(monthlyIncome.toString())) {
+      setIsIncomeCustom(true)
+    }
+
+    // Check if spouse income is a custom value
+    if (spouseIncome > 0 && !validSpouseOptions.includes(spouseIncome.toString())) {
+      setIsSpouseIncomeCustom(true)
+    }
+  }, []) // Run only once on mount
+
   // Contextual scroll based on navigation direction for pre-filled data
   useEffect(() => {
     // Check if this step has pre-filled data
@@ -106,7 +122,8 @@ export function Step2Income({ form, navigationDirection }: Step2IncomeProps) {
   const getCurrentSpouseIncomeValue = () => {
     if (isSpouseIncomeCustom) return 'custom'
     const validOptions = ['0', '50000', '100000', '200000']
-    return validOptions.includes(spouseIncome.toString()) ? spouseIncome.toString() : undefined
+    if (spouseIncome === 0) return '0'
+    return validOptions.includes(spouseIncome.toString()) ? spouseIncome.toString() : 'custom'
   }
 
   return (

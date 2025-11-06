@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -21,8 +21,15 @@ import {
 import { ProgressIndicator } from './progress-indicator'
 import { Step1Personal } from './step-1-personal'
 import { Step2Income } from './step-2-income'
+import { Step3Expenses } from './step-3-expenses'
+import { Step4NetWorth } from './step-4-networth'
+import { Step5FireGoal } from './step-5-fire-goal'
 import { useAutoSave } from '../hooks/use-auto-save'
 import { onboardingSchema, type OnboardingData } from '../types'
+import {
+  calculateLifestyleInflationAdjustment,
+  calculateFireMetrics,
+} from '../utils/fire-calculations'
 
 const TOTAL_STEPS = 5
 
@@ -49,6 +56,14 @@ export function OnboardingWizard() {
       dependents: undefined,
       monthly_income: undefined,
       spouse_income: 0,
+      monthly_expenses: undefined,
+      equity: 0,
+      debt: 0,
+      cash: 0,
+      real_estate: 0,
+      other_assets: 0,
+      fire_age: undefined,
+      fire_lifestyle_type: 'standard',
     },
     mode: 'onChange',
   })
@@ -60,8 +75,71 @@ export function OnboardingWizard() {
   const dependents = useWatch({ control: form.control, name: 'dependents' })
   const monthly_income = useWatch({ control: form.control, name: 'monthly_income' })
   const spouse_income = useWatch({ control: form.control, name: 'spouse_income' })
+  const monthly_expenses = useWatch({ control: form.control, name: 'monthly_expenses' })
+  const equity = useWatch({ control: form.control, name: 'equity' })
+  const debt = useWatch({ control: form.control, name: 'debt' })
+  const cash = useWatch({ control: form.control, name: 'cash' })
+  const real_estate = useWatch({ control: form.control, name: 'real_estate' })
+  const other_assets = useWatch({ control: form.control, name: 'other_assets' })
+  const fire_age = useWatch({ control: form.control, name: 'fire_age' })
+  const fire_lifestyle_type = useWatch({ control: form.control, name: 'fire_lifestyle_type' })
 
-  // Combine watched fields into formData object
+  // Calculate FIRE metrics when relevant fields are available
+  const calculatedMetrics = useMemo(() => {
+    // Only calculate if we have all required fields for FIRE calculation
+    if (!age || !fire_age || !fire_lifestyle_type || !monthly_expenses || !monthly_income) {
+      return {}
+    }
+
+    const householdIncome = (monthly_income || 0) + (spouse_income || 0)
+    const monthlySavings = householdIncome - (monthly_expenses || 0)
+    const savingsRate = householdIncome > 0 ? (monthlySavings / householdIncome) * 100 : 0
+    const currentNetWorth = (equity || 0) + (debt || 0) + (cash || 0) + (real_estate || 0) + (other_assets || 0)
+
+    // Calculate LIA
+    const LIA = calculateLifestyleInflationAdjustment(
+      age,
+      dependents || 0,
+      savingsRate,
+      fire_lifestyle_type as 'lean' | 'standard' | 'fat'
+    )
+
+    // Calculate all FIRE metrics
+    const metrics = calculateFireMetrics(
+      age,
+      fire_age,
+      monthly_expenses,
+      currentNetWorth,
+      monthlySavings,
+      householdIncome,
+      LIA
+    )
+
+    return {
+      lifestyle_inflation_adjustment: LIA,
+      safe_withdrawal_rate: metrics.safeWithdrawalRate,
+      post_fire_monthly_expense: Math.round(metrics.postFireMonthlyExpense),
+      required_corpus: Math.round(metrics.requiredCorpus),
+      projected_corpus_at_fire: Math.round(metrics.projectedCorpusAtFire),
+      monthly_savings_needed: Math.round(metrics.monthlySavingsNeeded),
+      is_on_track: metrics.isOnTrack,
+    }
+  }, [
+    age,
+    fire_age,
+    fire_lifestyle_type,
+    monthly_expenses,
+    monthly_income,
+    spouse_income,
+    dependents,
+    equity,
+    debt,
+    cash,
+    real_estate,
+    other_assets,
+  ])
+
+  // Combine watched fields + calculated metrics into formData object
   const formData = {
     age,
     city,
@@ -69,12 +147,21 @@ export function OnboardingWizard() {
     dependents,
     monthly_income,
     spouse_income,
+    monthly_expenses,
+    equity,
+    debt,
+    cash,
+    real_estate,
+    other_assets,
+    fire_age,
+    fire_lifestyle_type,
+    ...calculatedMetrics, // Include calculated FIRE metrics
   }
 
   // DEBUG: Track formData changes
   useEffect(() => {
     console.log('🔍 DEBUG [Wizard]: formData changed:', formData)
-  }, [age, city, marital_status, dependents, monthly_income, spouse_income])
+  }, [age, city, marital_status, dependents, monthly_income, spouse_income, monthly_expenses, equity, debt, cash, real_estate, other_assets, fire_age, fire_lifestyle_type, calculatedMetrics])
 
   // Auto-save hook
   const { isSaving, lastSaved, error: saveError, saveNow } = useAutoSave(
@@ -153,6 +240,7 @@ export function OnboardingWizard() {
             city: profile.city,
             marital_status: profile.marital_status,
             monthly_income: profile.monthly_income,
+            monthly_expenses: profile.monthly_expenses,
           })
           setShowResumeBanner(hasPartialData)
 
@@ -164,6 +252,14 @@ export function OnboardingWizard() {
             dependents: profile.dependents,
             monthly_income: profile.monthly_income,
             spouse_income: profile.spouse_income || 0,
+            monthly_expenses: profile.monthly_expenses,
+            equity: profile.equity || 0,
+            debt: profile.debt || 0,
+            cash: profile.cash || 0,
+            real_estate: profile.real_estate || 0,
+            other_assets: profile.other_assets || 0,
+            fire_age: profile.fire_age,
+            fire_lifestyle_type: profile.fire_lifestyle_type || 'standard',
           })
 
           // Calculate completed steps based on filled data and current step
@@ -176,6 +272,16 @@ export function OnboardingWizard() {
           }
           if (profile.monthly_income && step > 2) {
             completed.push(2)
+          }
+          if (profile.monthly_expenses && step > 3) {
+            completed.push(3)
+          }
+          // Step 4 is optional, so always mark it as completed if user is past it
+          if (step > 4) {
+            completed.push(4)
+          }
+          if (profile.fire_age && profile.fire_lifestyle_type && step > 5) {
+            completed.push(5)
           }
           setCompletedSteps(completed)
         }
@@ -262,6 +368,56 @@ export function OnboardingWizard() {
         }
         return true
       }
+      case 3: {
+        // Use strict step3Schema for validation
+        const { step3Schema } = await import('../types')
+        const result = step3Schema.safeParse({
+          monthly_expenses: formValues.monthly_expenses,
+        })
+
+        if (!result.success) {
+          result.error.issues.forEach((issue) => {
+            const path = issue.path[0] as keyof OnboardingData
+            form.setError(path, { message: issue.message })
+          })
+          return false
+        }
+        return true
+      }
+      case 4: {
+        // Step 4 is optional, no validation needed
+        return true
+      }
+      case 5: {
+        // Ensure fire_age is not null/undefined
+        if (!formValues.fire_age) {
+          form.setError('fire_age', { message: 'Please select your target FIRE age' })
+          return false
+        }
+
+        // Use strict step5Schema for validation
+        const { step5Schema } = await import('../types')
+        const result = step5Schema.safeParse({
+          fire_age: formValues.fire_age,
+          fire_lifestyle_type: formValues.fire_lifestyle_type,
+        })
+
+        if (!result.success) {
+          result.error.issues.forEach((issue) => {
+            const path = issue.path[0] as keyof OnboardingData
+            form.setError(path, { message: issue.message })
+          })
+          return false
+        }
+
+        // Additional validation: fire_age must be > current age
+        if (formValues.fire_age && formValues.age && formValues.fire_age <= formValues.age) {
+          form.setError('fire_age', { message: `FIRE age must be greater than your current age (${formValues.age})` })
+          return false
+        }
+
+        return true
+      }
       default:
         return true
     }
@@ -281,6 +437,13 @@ export function OnboardingWizard() {
         )
       case 2:
         return !!(formData.monthly_income && formData.monthly_income > 0)
+      case 3:
+        return !!(formData.monthly_expenses && formData.monthly_expenses > 0)
+      case 4:
+        // Step 4 is optional, always return true
+        return true
+      case 5:
+        return !!(formData.fire_age && formData.fire_age > (formData.age || 0) && formData.fire_lifestyle_type)
       default:
         return true
     }
@@ -367,6 +530,12 @@ export function OnboardingWizard() {
         return <Step1Personal form={form} navigationDirection={navigationDirection} />
       case 2:
         return <Step2Income form={form} navigationDirection={navigationDirection} />
+      case 3:
+        return <Step3Expenses form={form} navigationDirection={navigationDirection} />
+      case 4:
+        return <Step4NetWorth form={form} navigationDirection={navigationDirection} />
+      case 5:
+        return <Step5FireGoal form={form} navigationDirection={navigationDirection} />
       default:
         return (
           <div className="text-center py-12">
