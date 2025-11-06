@@ -619,8 +619,8 @@ export function OnboardingWizard() {
                       </Button>
 
                       <div className="flex items-center gap-3">
-                      {/* Skip button for steps 4-5 */}
-                      {currentStep >= 4 && (
+                      {/* Skip button for step 4 only (net worth is optional) */}
+                      {currentStep === 4 && (
                         <Button
                           type="button"
                           variant="ghost"

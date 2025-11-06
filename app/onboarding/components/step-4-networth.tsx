@@ -157,7 +157,7 @@ export function Step4NetWorth({ form, navigationDirection }: Step4NetWorthProps)
       >
         <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
         <p className="text-sm text-blue-800 dark:text-blue-200">
-          All fields optional - you can skip this and add assets later from your dashboard
+          Starting from ₹0? No problem! You can add assets anytime. Or fill now for personalized FIRE projections in the next step.
         </p>
       </motion.div>
 
