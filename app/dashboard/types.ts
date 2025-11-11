@@ -75,12 +75,13 @@ export interface MetricCardProps {
   value: string | number;
   subtitle?: string;
   icon?: React.ReactNode;
-  colorTheme?: 'emerald' | 'violet' | 'orange' | 'blue' | 'amber';
+  colorTheme?: 'emerald' | 'violet' | 'orange' | 'blue' | 'amber' | 'slate' | 'indigo' | 'cyan' | 'sky';
   trend?: {
     value: number;
     label: string;
     isPositive: boolean;
   };
+  badge?: React.ReactNode; // Semantic overlay (status, comparison, etc.)
   className?: string;
   onEdit?: () => void;
 }

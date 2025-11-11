@@ -47,6 +47,34 @@ const colorThemes = {
     accent: 'text-amber-600 dark:text-amber-400',
     iconBg: 'bg-amber-100 dark:bg-amber-900',
   },
+  slate: {
+    border: 'border-slate-200 dark:border-slate-800',
+    bg: 'bg-slate-50 dark:bg-slate-950',
+    text: 'text-slate-900 dark:text-slate-100',
+    accent: 'text-slate-600 dark:text-slate-400',
+    iconBg: 'bg-slate-100 dark:bg-slate-900',
+  },
+  indigo: {
+    border: 'border-indigo-200 dark:border-indigo-800',
+    bg: 'bg-indigo-50 dark:bg-indigo-950',
+    text: 'text-indigo-900 dark:text-indigo-100',
+    accent: 'text-indigo-600 dark:text-indigo-400',
+    iconBg: 'bg-indigo-100 dark:bg-indigo-900',
+  },
+  cyan: {
+    border: 'border-cyan-200 dark:border-cyan-800',
+    bg: 'bg-cyan-50 dark:bg-cyan-950',
+    text: 'text-cyan-900 dark:text-cyan-100',
+    accent: 'text-cyan-600 dark:text-cyan-400',
+    iconBg: 'bg-cyan-100 dark:bg-cyan-900',
+  },
+  sky: {
+    border: 'border-sky-200 dark:border-sky-800',
+    bg: 'bg-sky-50 dark:bg-sky-950',
+    text: 'text-sky-900 dark:text-sky-100',
+    accent: 'text-sky-600 dark:text-sky-400',
+    iconBg: 'bg-sky-100 dark:bg-sky-900',
+  },
 };
 
 export function MetricCard({
@@ -56,6 +84,7 @@ export function MetricCard({
   icon,
   colorTheme = 'emerald',
   trend,
+  badge,
   className,
   onEdit,
 }: MetricCardProps) {
@@ -100,6 +129,9 @@ export function MetricCard({
 
           {/* Subtitle */}
           {subtitle && <p className={cn('mt-1 text-xs', theme.text, 'opacity-50')}>{subtitle}</p>}
+
+          {/* Semantic Badge (status, comparison, etc.) */}
+          {badge && <div className="mt-2">{badge}</div>}
 
           {/* Trend indicator */}
           {trend && (

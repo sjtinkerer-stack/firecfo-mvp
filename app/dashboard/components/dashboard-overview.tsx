@@ -90,7 +90,7 @@ export function DashboardOverview() {
           value={formatIndianCurrency(data.currentNetworth)}
           subtitle={formatFullIndianCurrency(data.currentNetworth)}
           icon={<Wallet className="h-6 w-6" />}
-          colorTheme="violet"
+          colorTheme="slate"
           onEdit={() => setIsAssetsModalOpen(true)}
         />
 
@@ -100,7 +100,7 @@ export function DashboardOverview() {
           value={formatIndianCurrency(data.requiredCorpus)}
           subtitle={`At ${data.safeWithdrawalRate}% SWR`}
           icon={<Target className="h-6 w-6" />}
-          colorTheme="orange"
+          colorTheme="indigo"
         />
 
         {/* Projected Corpus */}
@@ -109,7 +109,24 @@ export function DashboardOverview() {
           value={formatIndianCurrency(data.projectedCorpusAtFire)}
           subtitle={`By age ${data.fireAge} with 12% returns`}
           icon={<TrendingUp className="h-6 w-6" />}
-          colorTheme="emerald"
+          colorTheme="blue"
+          badge={
+            data.projectedCorpusAtFire >= data.requiredCorpus ? (
+              <div className="flex items-center gap-1.5 text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                <span>✓</span>
+                <span>
+                  Surplus: {formatIndianCurrency(data.projectedCorpusAtFire - data.requiredCorpus)}
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 text-sm font-medium text-orange-600 dark:text-orange-400">
+                <span>⚠️</span>
+                <span>
+                  Shortfall: {formatIndianCurrency(data.requiredCorpus - data.projectedCorpusAtFire)}
+                </span>
+              </div>
+            )
+          }
         />
 
         {/* Monthly Income */}
@@ -118,7 +135,7 @@ export function DashboardOverview() {
           value={formatIndianCurrency(householdIncome)}
           subtitle={formatFullIndianCurrency(householdIncome)}
           icon={<DollarSign className="h-6 w-6" />}
-          colorTheme="emerald"
+          colorTheme="cyan"
           onEdit={() => setIsIncomeExpensesModalOpen(true)}
         />
 
@@ -128,7 +145,7 @@ export function DashboardOverview() {
           value={formatIndianCurrency(data.monthlyExpenses)}
           subtitle={formatFullIndianCurrency(data.monthlyExpenses)}
           icon={<TrendingDown className="h-6 w-6" />}
-          colorTheme="blue"
+          colorTheme="sky"
           onEdit={() => setIsIncomeExpensesModalOpen(true)}
         />
 
@@ -138,7 +155,25 @@ export function DashboardOverview() {
           value={`${(data.savingsRate * 100).toFixed(1)}%`}
           subtitle={`${formatIndianCurrency(data.monthlySavings)}/month`}
           icon={<PiggyBank className="h-6 w-6" />}
-          colorTheme="emerald"
+          colorTheme="violet"
+          badge={
+            data.savingsRate >= 0.4 ? (
+              <div className="flex items-center gap-1.5 text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                <span>🚀</span>
+                <span>Excellent - Fast track to FIRE</span>
+              </div>
+            ) : data.savingsRate >= 0.2 ? (
+              <div className="flex items-center gap-1.5 text-sm font-medium text-blue-600 dark:text-blue-400">
+                <span>✓</span>
+                <span>Good progress</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 text-sm font-medium text-orange-600 dark:text-orange-400">
+                <span>💡</span>
+                <span>Consider increasing savings</span>
+              </div>
+            )
+          }
         />
       </div>
 
