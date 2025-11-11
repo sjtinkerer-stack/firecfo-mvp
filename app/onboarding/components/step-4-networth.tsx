@@ -3,13 +3,14 @@
 import { useEffect } from 'react'
 import { UseFormReturn } from 'react-hook-form'
 import { motion } from 'framer-motion'
-import { TrendingUp, Shield, Wallet, Home, Gem, Info, Sparkles } from 'lucide-react'
+import { TrendingUp, Shield, Wallet, Home, Gem, Sparkles } from 'lucide-react'
 import { ConversationStep } from './conversation-step'
 import { AssetCategorySection } from './asset-category-section'
 import { ProgressBar } from './progress-bar'
 import { MicroFeedback } from './micro-feedback'
 import { OnboardingData } from '../types'
 import { scrollToPosition } from '../utils/scroll-helpers'
+import { calculateAge, createDateFromYearMonth } from '@/app/utils/date-helpers'
 
 interface Step4NetWorthProps {
   form: UseFormReturn<OnboardingData>
@@ -73,7 +74,13 @@ export function Step4NetWorth({ form, navigationDirection }: Step4NetWorthProps)
   const cash = form.watch('cash') || 0
   const realEstate = form.watch('real_estate') || 0
   const otherAssets = form.watch('other_assets') || 0
-  const age = form.watch('age') || 30
+  const birthYear = form.watch('birth_year')
+  const birthMonth = form.watch('birth_month')
+
+  // Calculate age from birth year and month
+  const age = birthYear && birthMonth
+    ? calculateAge(createDateFromYearMonth(birthYear, birthMonth))
+    : 30
 
   const totalNetWorth = equity + debt + cash + realEstate + otherAssets
 
@@ -148,19 +155,6 @@ export function Step4NetWorth({ form, navigationDirection }: Step4NetWorthProps)
 
   return (
     <div className="space-y-6">
-      {/* Info Banner */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-950/30 border-l-4 border-blue-500 rounded-r-lg"
-      >
-        <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
-        <p className="text-sm text-blue-800 dark:text-blue-200">
-          Starting from ₹0? No problem! You can add assets anytime. Or fill now for personalized FIRE projections in the next step.
-        </p>
-      </motion.div>
-
       {/* Main Question */}
       <ConversationStep
         question="What's your current net worth?"

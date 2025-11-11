@@ -8,6 +8,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { DashboardData } from '../types';
+import { calculateAge, calculateYearsToFire } from '@/app/utils/date-helpers';
 
 export function useDashboardData() {
   const [data, setData] = useState<DashboardData | null>(null);
@@ -48,19 +49,33 @@ export function useDashboardData() {
         throw new Error('Profile not found');
       }
 
+      // Compute age from date_of_birth
+      const age = profile.date_of_birth ? calculateAge(profile.date_of_birth) : 0;
+
+      // Compute years to FIRE from fire_target_date
+      const yearsToFire = profile.fire_target_date ? calculateYearsToFire(profile.fire_target_date) : 0;
+
+      // fireAge is the user's preferred target age (stored), for backwards compatibility
+      const fireAge = profile.fire_target_age || 0;
+
       // Transform database row to DashboardData
       const dashboardData: DashboardData = {
         // User info
         userId: profile.id,
-        age: profile.age || 0,
+        userName: user.user_metadata?.full_name || user.user_metadata?.name || null,
+        userEmail: user.email || '',
+        dateOfBirth: profile.date_of_birth || '',
+        age,
         city: profile.city || '',
         maritalStatus: profile.marital_status || 'Single',
         dependents: profile.dependents || 0,
 
         // FIRE goal
-        fireAge: profile.fire_age || 0,
+        fireTargetDate: profile.fire_target_date || '',
+        fireTargetAge: profile.fire_target_age || 0,
+        fireAge, // For backwards compatibility
         fireLifestyleType: profile.fire_lifestyle_type || 'standard',
-        yearsToFire: (profile.fire_age || 0) - (profile.age || 0),
+        yearsToFire,
 
         // Income & expenses
         monthlyIncome: profile.monthly_income || 0,

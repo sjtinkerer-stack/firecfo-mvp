@@ -20,6 +20,13 @@ import {
   getFireTargetYear,
   FireMetrics,
 } from '../utils/fire-calculations'
+import {
+  calculateAge,
+  createDateFromYearMonth,
+  calculateFireTargetDate,
+  formatFireTargetDate,
+  formatFireTargetYear,
+} from '@/app/utils/date-helpers'
 
 interface Step5FireGoalProps {
   form: UseFormReturn<OnboardingData>
@@ -90,7 +97,8 @@ export function Step5FireGoal({ form, navigationDirection }: Step5FireGoalProps)
   const [showCalculationDetails, setShowCalculationDetails] = useState(false)
 
   // Watch form values
-  const age = form.watch('age') || 30
+  const birthYear = form.watch('birth_year')
+  const birthMonth = form.watch('birth_month')
   const dependents = form.watch('dependents') || 0
   const monthlyIncome = form.watch('monthly_income') || 0
   const spouseIncome = form.watch('spouse_income') || 0
@@ -100,9 +108,17 @@ export function Step5FireGoal({ form, navigationDirection }: Step5FireGoalProps)
   const cash = form.watch('cash') || 0
   const realEstate = form.watch('real_estate') || 0
   const otherAssets = form.watch('other_assets') || 0
-  const fireAge = form.watch('fire_age') || Math.max(45, age + 15)
+  const fireTargetAge = form.watch('fire_target_age')
   const fireLifestyleType = form.watch('fire_lifestyle_type') || 'standard'
   const errors = form.formState.errors
+
+  // Calculate age from DOB
+  const age = birthYear && birthMonth
+    ? calculateAge(createDateFromYearMonth(birthYear, birthMonth))
+    : 30 // Default fallback
+
+  // Use fireTargetAge or compute default
+  const fireAge = fireTargetAge || Math.max(45, age + 15)
 
   // Calculate derived values
   const householdIncome = monthlyIncome + spouseIncome
@@ -110,18 +126,25 @@ export function Step5FireGoal({ form, navigationDirection }: Step5FireGoalProps)
   const savingsRate = householdIncome > 0 ? (monthlySavings / householdIncome) * 100 : 0
   const currentNetWorth = equity + debt + cash + realEstate + otherAssets
 
-  // Initialize fire_age with smart default
+  // Initialize fire_target_age with smart default
   useEffect(() => {
-    const currentFireAge = form.getValues('fire_age')
-    // Set default if fire_age is null, undefined, 0, or less than/equal to current age
+    const currentFireAge = form.getValues('fire_target_age')
+    // Set default if fire_target_age is null, undefined, 0, or less than/equal to current age
     if (!currentFireAge || currentFireAge <= age) {
       const defaultFireAge = Math.max(45, age + 15)
-      form.setValue('fire_age', defaultFireAge, { shouldValidate: true })
+      form.setValue('fire_target_age', defaultFireAge, { shouldValidate: true })
     }
     if (!form.getValues('fire_lifestyle_type')) {
       form.setValue('fire_lifestyle_type', 'standard', { shouldValidate: true })
     }
   }, [age, form])
+
+  // Compute fire_target_date from DOB + fire_target_age
+  const fireTargetDate = useMemo(() => {
+    if (!birthYear || !birthMonth || !fireAge) return undefined
+    const dob = createDateFromYearMonth(birthYear, birthMonth)
+    return calculateFireTargetDate(dob, fireAge)
+  }, [birthYear, birthMonth, fireAge])
 
   // Calculate LIA and FIRE metrics
   const LIA = useMemo(() => {
@@ -162,12 +185,12 @@ export function Step5FireGoal({ form, navigationDirection }: Step5FireGoalProps)
     }
   }, [navigationDirection, fireAge])
 
-  // Validate fire_age > current age
+  // Validate fire_target_age > current age
   useEffect(() => {
     if (fireAge && fireAge <= age) {
-      form.setError('fire_age', { message: `FIRE age must be greater than your current age (${age})` })
+      form.setError('fire_target_age', { message: `FIRE age must be greater than your current age (${age})` })
     } else {
-      form.clearErrors('fire_age')
+      form.clearErrors('fire_target_age')
     }
   }, [fireAge, age, form])
 
@@ -185,7 +208,7 @@ export function Step5FireGoal({ form, navigationDirection }: Step5FireGoalProps)
         question="When do you want to achieve FIRE?"
         tooltip="Your target age for Financial Independence. The earlier you want to retire, the more aggressive your savings need to be."
         icon={<Target className="w-4 h-4" strokeWidth={1.5} />}
-        error={errors.fire_age?.message}
+        error={errors.fire_target_age?.message}
       >
         <div className="space-y-5">
           {/* Age Input with Slider */}
@@ -195,14 +218,14 @@ export function Step5FireGoal({ form, navigationDirection }: Step5FireGoalProps)
               value={fireAge || ''}
               onChange={(e) => {
                 const value = e.target.value === '' ? 0 : parseInt(e.target.value)
-                form.setValue('fire_age', value, { shouldValidate: true })
+                form.setValue('fire_target_age', value, { shouldValidate: true })
               }}
               className="h-20 text-center text-4xl font-bold max-w-xs"
               placeholder="45"
             />
             <Slider
               value={[fireAge]}
-              onValueChange={([value]) => form.setValue('fire_age', value, { shouldValidate: true })}
+              onValueChange={([value]) => form.setValue('fire_target_age', value, { shouldValidate: true })}
               min={age + 1}
               max={Math.min(80, age + 40)}
               step={1}
@@ -214,7 +237,7 @@ export function Step5FireGoal({ form, navigationDirection }: Step5FireGoalProps)
           </div>
 
           {/* Years to FIRE Card */}
-          {fireAge > age && (
+          {fireAge > age && fireTargetDate && (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -230,7 +253,9 @@ export function Step5FireGoal({ form, navigationDirection }: Step5FireGoalProps)
               <p className="text-3xl font-bold text-blue-900 dark:text-blue-100">
                 {fireMetrics.yearsToFire} years
               </p>
-              <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">By {targetYear}</p>
+              <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                Target: Age {fireAge} in {formatFireTargetDate(fireTargetDate)} ({formatFireTargetYear(fireTargetDate)})
+              </p>
             </motion.div>
           )}
         </div>

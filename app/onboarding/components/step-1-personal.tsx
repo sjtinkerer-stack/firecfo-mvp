@@ -6,7 +6,7 @@ import { User, MapPin, Users, Heart, Calendar } from 'lucide-react'
 import { ConversationStep } from './conversation-step'
 import { PillSelector } from './pill-selector'
 import { MicroFeedback } from './micro-feedback'
-import { OnboardingData } from '../types'
+import { OnboardingData, MONTHS } from '../types'
 import {
   Select,
   SelectContent,
@@ -17,6 +17,7 @@ import {
 import { Slider } from '@/components/ui/slider'
 import { Input } from '@/components/ui/input'
 import { scrollToPosition } from '../utils/scroll-helpers'
+import { calculateAge, createDateFromYearMonth } from '@/app/utils/date-helpers'
 
 interface Step1PersonalProps {
   form: UseFormReturn<OnboardingData>
@@ -61,7 +62,8 @@ const getFeedback = {
 
 export function Step1Personal({ form, navigationDirection }: Step1PersonalProps) {
   // Watch form values for reactivity
-  const age = form.watch('age')
+  const birthYear = form.watch('birth_year')
+  const birthMonth = form.watch('birth_month')
   const city = form.watch('city')
   const maritalStatus = form.watch('marital_status')
   const dependents = form.watch('dependents')
@@ -69,8 +71,13 @@ export function Step1Personal({ form, navigationDirection }: Step1PersonalProps)
 
   const [showCitySearch, setShowCitySearch] = useState(false)
 
+  // Calculate age from birth year and month
+  const age = birthYear && birthMonth
+    ? calculateAge(createDateFromYearMonth(birthYear, birthMonth))
+    : undefined
+
   // Check if this step has pre-filled data (used to control auto-scroll behavior)
-  const hasPreFilledData = !!(age && city && maritalStatus !== undefined && dependents !== undefined)
+  const hasPreFilledData = !!(birthYear && birthMonth && city && maritalStatus !== undefined && dependents !== undefined)
 
   // Contextual scroll based on navigation direction for pre-filled data
   useEffect(() => {
@@ -119,74 +126,82 @@ export function Step1Personal({ form, navigationDirection }: Step1PersonalProps)
 
   return (
     <div className="space-y-8">
-      {/* Age Question */}
+      {/* Birth Year & Month Question */}
       <ConversationStep
-        question="What's your age?"
-        tooltip="Age influences your ideal asset allocation strategy"
+        question="When were you born?"
+        tooltip="We use this to calculate your age and optimize your asset allocation strategy"
         icon={<Calendar className="w-4 h-4" strokeWidth={1.5} />}
-        error={errors.age?.message}
+        error={errors.birth_year?.message || errors.birth_month?.message}
         scrollOnMount={!hasPreFilledData}
       >
-        <div className="space-y-6 max-w-xs mx-auto">
-          {/* Age input with slider */}
-          <div className="flex flex-col gap-6">
-            {/* Direct input field */}
-            <div className="relative">
-              <Input
-                type="number"
-                min={18}
-                max={65}
-                placeholder="Enter your age"
-                value={age || ''}
-                onChange={(e) => {
-                  const value = e.target.value
-                  // Allow empty input
-                  if (value === '') {
-                    form.setValue('age', undefined, { shouldValidate: true })
-                    return
-                  }
-                  // Allow typing intermediate values (like "2" when typing "25")
-                  const numValue = parseInt(value)
-                  if (!isNaN(numValue)) {
-                    form.setValue('age', numValue, { shouldValidate: true })
+        <div className="space-y-6 max-w-md mx-auto">
+          <div className="grid grid-cols-2 gap-4">
+            {/* Birth Year Dropdown */}
+            <div>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                Birth Year
+              </label>
+              <Select
+                value={birthYear?.toString()}
+                onValueChange={(value) => {
+                  form.setValue('birth_year', parseInt(value), { shouldValidate: true })
+                  // Set default birth month if not already set
+                  if (!birthMonth) {
+                    form.setValue('birth_month', 7, { shouldValidate: true }) // Default to July
                   }
                 }}
-                onBlur={(e) => {
-                  // On blur, enforce min/max constraints
-                  const value = parseInt(e.target.value)
-                  if (!isNaN(value)) {
-                    if (value < 18) {
-                      form.setValue('age', 18, { shouldValidate: true })
-                    } else if (value > 65) {
-                      form.setValue('age', 65, { shouldValidate: true })
-                    }
-                  }
-                }}
-                className="h-20 text-3xl font-bold text-center tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none border-2 transition-all hover:border-primary/50 focus:border-primary"
-              />
-              <div className="absolute -bottom-6 left-0 right-0 text-center">
-                <span className="text-sm text-muted-foreground">years old</span>
-              </div>
+              >
+                <SelectTrigger className="h-12 text-lg">
+                  <SelectValue placeholder="Select year" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[250px]">
+                  {Array.from({ length: 48 }, (_, i) => {
+                    const year = new Date().getFullYear() - 18 - i // Ages 18-65
+                    return (
+                      <SelectItem key={year} value={year.toString()}>
+                        {year}
+                      </SelectItem>
+                    )
+                  })}
+                </SelectContent>
+              </Select>
             </div>
 
-            {/* Slider */}
-            <div className="w-full pt-4">
-              <Slider
-                min={18}
-                max={65}
-                step={1}
-                value={age ? [age] : [18]}
-                onValueChange={(values) => {
-                  form.setValue('age', values[0], { shouldValidate: true })
+            {/* Birth Month Dropdown */}
+            <div>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                Birth Month
+              </label>
+              <Select
+                value={birthMonth?.toString()}
+                onValueChange={(value) => {
+                  form.setValue('birth_month', parseInt(value), { shouldValidate: true })
                 }}
-                className="w-full"
-              />
-              <div className="flex justify-between mt-2 text-xs text-muted-foreground">
-                <span>18</span>
-                <span>65</span>
-              </div>
+                disabled={!birthYear}
+              >
+                <SelectTrigger className="h-12 text-lg">
+                  <SelectValue placeholder="Month" />
+                </SelectTrigger>
+                <SelectContent>
+                  {MONTHS.map((month) => (
+                    <SelectItem key={month.value} value={month.value.toString()}>
+                      {month.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
+
+          {/* Display calculated age */}
+          {age && (
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground">Your age</p>
+              <p className="text-4xl font-bold text-gray-900 dark:text-gray-100 mt-1">
+                {age} years
+              </p>
+            </div>
+          )}
         </div>
         {age && age >= 18 && (
           <div className="mt-4">

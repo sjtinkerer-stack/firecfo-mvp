@@ -1,16 +1,40 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 # FireCFO - AI-Powered FIRE Planning App
 
 ## Project Overview
 FireCFO helps Indians achieve Financial Independence Retire Early (FIRE) through AI-powered financial planning. Target users: 28-40 year olds earning ₹15L-50L annually.
 
 ## Tech Stack
-- **Framework**: Next.js 14 (App Router, TypeScript, Turbopack)
-- **Styling**: Tailwind CSS + shadcn/ui components
+- **Framework**: Next.js 16 (App Router, TypeScript, React 19)
+- **Styling**: Tailwind CSS 4 + shadcn/ui components
 - **Database**: Supabase (PostgreSQL + Auth)
 - **AI**: Anthropic Claude 3.5 Sonnet API
 - **Charts**: Recharts
 - **Deployment**: Vercel
 - **Email**: Resend (for alerts)
+- **Date Utilities**: date-fns
+
+## Development Commands
+
+```bash
+# Start development server (Turbopack enabled)
+npm run dev
+# Opens at http://localhost:3000
+
+# Build for production
+npm run build
+
+# Start production server (after build)
+npm run start
+
+# Run ESLint
+npm run lint
+```
+
+**Note**: There are no test scripts configured yet in package.json.
 
 ## Key Features (MVP Scope)
 1. ✅ User onboarding (5-step wizard) - **COMPLETED**
@@ -28,8 +52,8 @@ FireCFO helps Indians achieve Financial Independence Retire Early (FIRE) through
 - `created_at`, `updated_at` (timestamps with auto-update trigger)
 - `onboarding_completed` (boolean)
 
-**Step 1: Personal Information**
-- `age` (integer, 18-65)
+**Step 1: Personal Information (Date-Based Approach - UPDATED)**
+- `date_of_birth` (DATE, NOT NULL) - Source of truth for age calculation
 - `city` (text)
 - `marital_status` (enum: 'Single', 'Married')
 - `dependents` (integer, 0-10)
@@ -50,10 +74,10 @@ FireCFO helps Indians achieve Financial Independence Retire Early (FIRE) through
 - `other_assets` (numeric) - Gold, crypto, etc.
 - `current_networth` (numeric) - Auto-calculated sum (legacy field)
 
-**Step 5: FIRE Goal**
-- `fire_age` (integer, 18-80, must be > current age)
+**Step 5: FIRE Goal (Date-Based Approach - UPDATED)**
+- `fire_target_date` (DATE, NOT NULL) - Computed from date_of_birth + fire_target_age
+- `fire_target_age` (integer, 18-80) - User's preferred FIRE age expression
 - `fire_lifestyle_type` (enum: 'lean', 'standard', 'fat')
-- `fire_target_amount` (numeric, legacy field)
 
 **Calculated FIRE Metrics (Auto-saved from frontend)**
 - `lifestyle_inflation_adjustment` (numeric) - LIA percentage (5-20%)
@@ -297,6 +321,185 @@ FireCFO helps Indians achieve Financial Independence Retire Early (FIRE) through
 
 ---
 
+## Dashboard Implementation (COMPLETED)
+
+### Overview
+The dashboard provides a comprehensive view of the user's FIRE progress, displaying key metrics, visualizations, and goal tracking. Currently implemented as a **read-only display** pulling data from the onboarding flow.
+
+### Components & Features
+
+#### 1. Dashboard Page (`app/dashboard/page.tsx`)
+- Client-side authentication verification
+- Checks `onboarding_completed` status
+- Redirects unauthorized users to `/login` or `/onboarding`
+- Displays user name and email
+- Logout functionality
+- Renders `DashboardOverview` component
+
+#### 2. Data Layer (`app/dashboard/hooks/use-dashboard-data.ts`)
+Custom React hook that:
+- Fetches complete user profile from Supabase `user_profiles` table
+- Transforms database row into `DashboardData` type
+- Calculates derived values:
+  - Years to FIRE (fireAge - age)
+  - Monthly savings (income + spouseIncome - expenses)
+  - Savings rate percentage
+  - Current net worth (sum of all 5 asset categories)
+- Provides loading/error states and `refetch()` function
+- Auto-fetches on component mount
+
+#### 3. FIRE Status Banner (`fire-status-banner.tsx`)
+Large prominent banner at top of dashboard:
+- **On Track Status** (emerald theme): Shows when `projected_corpus_at_fire >= required_corpus`
+- **Needs Adjustment** (amber theme): Shows when user won't reach goal
+- Displays:
+  - FIRE lifestyle type badge (Lean/Standard/Fat)
+  - Years countdown to FIRE age
+  - Target year calculation
+  - Savings gap amount if not on track
+- Animated with Framer Motion fade-in
+
+#### 4. Metric Cards (`metric-card.tsx`)
+Reusable card component with 5 color themes. Dashboard displays 6 cards:
+1. **Current Net Worth** (violet): Sum of all assets
+2. **Required FIRE Corpus** (orange): Inflation-adjusted target
+3. **Projected Corpus at FIRE** (emerald): Future value with 12% returns
+4. **Monthly Household Income** (emerald): User + spouse income
+5. **Monthly Expenses** (blue): Current spending
+6. **Savings Rate** (emerald): Percentage of income saved
+
+Features:
+- Icon with colored circular background
+- Large value display with Indian formatting
+- Subtitle for context
+- Optional trend indicators (ArrowUp/Down)
+- Hover scale animation
+- Dark mode support
+
+#### 5. Net Worth Growth Chart (`networth-chart.tsx`)
+Recharts AreaChart showing wealth projection:
+- **X-axis**: Age milestones from current age to FIRE age
+- **Y-axis**: Net worth in lakhs/crores (Indian formatting)
+- **Two data series**:
+  - **Projected Corpus** (emerald filled area with gradient): Future value calculation assuming 12% returns
+  - **Required Corpus** (violet dashed line): Goal target adjusted for inflation
+- Custom tooltip with formatted currency
+- Legend explaining both lines
+- Blue theme card wrapper
+- Generated by `generateNetWorthChartData()` utility
+
+**Calculation Logic:**
+- Creates data points every 2-5 years based on timeline length
+- Future value of current assets: `currentNetWorth × (1.12)^yearsFromNow`
+- Future value of monthly savings: Annuity formula with 12% annual return
+- Total projected = assets + savings
+
+#### 6. Asset Allocation Pie Chart (`asset-allocation-chart.tsx`)
+Recharts PieChart (donut style) showing portfolio breakdown:
+- **5 asset categories** with custom colors:
+  - Equity (blue): Stocks, mutual funds, index funds
+  - Debt (emerald): FDs, PPF, EPF, bonds
+  - Cash (yellow): Savings accounts, liquid funds
+  - Real Estate (orange): Property values
+  - Other (purple): Gold, crypto, vehicles
+- Features:
+  - Custom labels showing percentages (hidden if <5%)
+  - Custom tooltip with amount and percentage
+  - Legend with category names and percentages
+  - **Recommended Allocation Display**: Shows ideal allocation based on age (Equity = 100 - Age, Debt = Age)
+  - **Rebalancing Alert**: Warning if deviation from recommended >10%
+  - Empty state message if no assets entered
+- Violet theme card wrapper
+- Generated by `generateAssetAllocationData()` utility
+
+#### 7. FIRE Calculation Details Section
+Displays the math behind the projections:
+- **Post-FIRE Monthly Expense**: Current expenses adjusted by LIA
+- **Safe Withdrawal Rate**: Dynamic SWR (3.5%, 4%, or 4.5% based on FIRE age)
+- **Monthly Savings Needed**: Gap analysis if not on track
+- Shows lifestyle inflation adjustment percentage
+- Explains SWR reasoning (early vs late retirement)
+- Amber theme section
+
+#### 8. Dashboard Calculations (`utils/dashboard-calculations.ts`)
+Utility functions for data transformation:
+
+**`generateNetWorthChartData()`**: Creates projection array
+- Input: currentAge, fireAge, currentNetWorth, monthlySavings
+- Uses 12% pre-retirement return assumption
+- Generates intermediate points (every 2-5 years)
+- Returns array of `{age, projectedCorpus, requiredCorpus}`
+
+**`generateAssetAllocationData()`**: Prepares pie chart data
+- Filters zero-value assets
+- Calculates percentages
+- Assigns colors and names
+- Returns array of `{name, value, percentage, color}`
+
+**`getRecommendedAllocation()`**: Age-based allocation
+- Equity: `100 - age` (clamped 30-70%)
+- Debt: `age` (clamped 20-50%)
+- Cash: Remaining balance
+- Returns `{equity, debt, cash}` percentages
+
+**`calculateSavingsGap()`**: Monthly shortfall
+- If not on track, calculates additional savings needed
+- Returns difference between required and current savings
+
+**`formatIndianCurrency()`**: Lakhs/crores formatting
+- ≥1 crore: "₹X.XX Cr"
+- ≥1 lakh: "₹X.XX L"
+- <1 lakh: "₹X,XXX"
+
+**`formatFullIndianCurrency()`**: Full INR format
+- Uses `Intl.NumberFormat('en-IN', {style: 'currency', currency: 'INR'})`
+
+#### 9. Type Definitions (`types.ts`)
+Complete TypeScript interfaces:
+- `DashboardData`: All user profile fields + derived values
+- `NetWorthChartDataPoint`: `{age, projectedCorpus, requiredCorpus}`
+- `AssetAllocation`: `{name, value, percentage, color}`
+- `MetricCardProps`: Props for metric card component
+- `FireStatusBannerProps`: Props for status banner
+
+### Data Flow
+```
+User loads /dashboard
+  ↓
+Dashboard page checks auth & onboarding status
+  ↓
+DashboardOverview component mounts
+  ↓
+useDashboardData hook fetches from Supabase
+  ↓
+Transform data + calculate derived values
+  ↓
+Pass to child components:
+  - FireStatusBanner
+  - MetricCards (×6)
+  - NetWorthChart
+  - AssetAllocationChart
+  - FIRE Details Section
+  ↓
+Each component renders with Framer Motion animations
+```
+
+### Key Assumptions Used
+- **Pre-retirement returns**: 12% annually (equity-heavy portfolio)
+- **Inflation**: 6% annually (from onboarding calculations)
+- **Post-retirement returns**: 8% annually (not yet used in dashboard)
+- All calculated metrics are **stored in database** from onboarding, not recalculated
+
+### Current Limitations
+1. **Read-only**: Cannot edit any values from dashboard
+2. **No historical data**: Only shows future projections, no past tracking
+3. **Aggregate assets only**: Individual assets not tracked
+4. **No refresh mechanism**: Must reload page to see updated data
+5. **No goal adjustment**: Must return to onboarding to change FIRE age/lifestyle
+6. **Static assumptions**: Cannot customize return rates or inflation
+
+---
+
 ## Technical Implementation
 
 ### Reusable Components Created
@@ -350,39 +553,128 @@ FireCFO helps Indians achieve Financial Independence Retire Early (FIRE) through
 
 ## File Structure
 ```
-app/onboarding/
-├── components/
-│   ├── step-1-personal.tsx           # Step 1 component
-│   ├── step-2-income.tsx             # Step 2 component
-│   ├── step-3-expenses.tsx           # Step 3 component
-│   ├── step-4-networth.tsx           # Step 4 component
-│   ├── step-5-fire-goal.tsx          # Step 5 component
-│   ├── onboarding-wizard.tsx         # Main orchestrator with form state
-│   ├── progress-indicator.tsx        # Step progress UI
-│   ├── conversation-step.tsx         # Reusable question wrapper
-│   ├── pill-selector.tsx             # Reusable button selector
-│   ├── micro-feedback.tsx            # Reusable feedback messages
-│   ├── suggestion-card.tsx           # Reusable suggestion UI
-│   ├── asset-category-section.tsx    # Reusable asset category
-│   └── progress-bar.tsx              # Reusable allocation bars
-├── hooks/
-│   └── use-auto-save.ts              # Auto-save hook with debouncing
+app/
+├── onboarding/
+│   ├── components/
+│   │   ├── step-1-personal.tsx           # Step 1 component
+│   │   ├── step-2-income.tsx             # Step 2 component
+│   │   ├── step-3-expenses.tsx           # Step 3 component
+│   │   ├── step-4-networth.tsx           # Step 4 component
+│   │   ├── step-5-fire-goal.tsx          # Step 5 component
+│   │   ├── onboarding-wizard.tsx         # Main orchestrator with form state
+│   │   ├── progress-indicator.tsx        # Step progress UI
+│   │   ├── conversation-step.tsx         # Reusable question wrapper
+│   │   ├── pill-selector.tsx             # Reusable button selector
+│   │   ├── micro-feedback.tsx            # Reusable feedback messages
+│   │   ├── suggestion-card.tsx           # Reusable suggestion UI
+│   │   ├── asset-category-section.tsx    # Reusable asset category
+│   │   └── progress-bar.tsx              # Reusable allocation bars
+│   ├── hooks/
+│   │   └── use-auto-save.ts              # Auto-save hook with debouncing
+│   ├── utils/
+│   │   ├── scroll-helpers.ts             # Smart scroll utilities
+│   │   └── fire-calculations.ts          # LIA, SWR, FIRE metrics calculations
+│   ├── types.ts                          # Zod schemas + TypeScript types
+│   └── page.tsx                          # Onboarding route entry point
+│
+├── dashboard/
+│   ├── components/
+│   │   ├── dashboard-overview.tsx        # Main dashboard orchestrator
+│   │   ├── fire-status-banner.tsx        # On-track status banner (emerald/amber)
+│   │   ├── metric-card.tsx               # Reusable metric display with 5 themes
+│   │   ├── networth-chart.tsx            # Wealth projection chart (Recharts)
+│   │   ├── asset-allocation-chart.tsx    # Pie chart for asset breakdown
+│   │   ├── edit-income-expenses-modal.tsx # Quick edit modal for income/expenses
+│   │   └── edit-assets-modal.tsx         # Quick edit modal for assets
+│   ├── settings/
+│   │   ├── components/
+│   │   │   ├── settings-section.tsx      # Section wrapper
+│   │   │   ├── edit-personal-info-modal.tsx # Personal info editor
+│   │   │   ├── edit-fire-goal-modal.tsx  # FIRE goal editor
+│   │   │   └── impact-preview.tsx        # Change preview component
+│   │   └── page.tsx                      # Settings page (NEW)
+│   ├── hooks/
+│   │   └── use-dashboard-data.ts         # Data fetching hook from Supabase
+│   ├── utils/
+│   │   └── dashboard-calculations.ts     # Chart generators, formatters
+│   ├── types.ts                          # Dashboard TypeScript types
+│   └── page.tsx                          # Dashboard route (protected)
+│
 ├── utils/
-│   ├── scroll-helpers.ts             # Smart scroll utilities
-│   └── fire-calculations.ts          # LIA, SWR, FIRE metrics calculations
-├── types.ts                          # Zod schemas + TypeScript types
-└── page.tsx                          # Onboarding route entry point
+│   └── date-helpers.ts                   # Date/age calculation utilities (NEW)
+│
+├── auth/
+│   └── callback/
+│       └── route.ts                      # Supabase OAuth callback handler
+├── login/
+│   └── page.tsx                          # Login page
+├── signup/
+│   └── page.tsx                          # Signup page
+├── page.tsx                              # Landing page
+├── layout.tsx                            # Root layout
+└── globals.css                           # Global styles
 ```
 
 ### Database Migrations
 ```
-supabase-migration.sql                # Base user_profiles table + triggers
-add-step4-asset-fields.sql            # Asset category columns
-add-step5-fire-goal-fields.sql        # FIRE goal + calculated metrics columns
-fix-rls-policies.sql                  # Row Level Security policies
+supabase-migration.sql                    # Base user_profiles table + triggers
+add-step4-asset-fields.sql                # Asset category columns
+add-step5-fire-goal-fields.sql            # FIRE goal + calculated metrics columns
+fix-rls-policies.sql                      # Row Level Security policies
+migrate-to-date-based-age.sql             # NEW: Date-based age system (replaces age/fire_age)
 ```
 
 ---
+
+## Application Architecture
+
+### Authentication & Routing Flow
+**Middleware (`middleware.ts`):**
+- Runs on all routes (except static assets, images, API routes)
+- Checks authentication via `supabase.auth.getUser()`
+- Protected routes: `/dashboard`, `/onboarding`
+- Redirects authenticated users from `/login`, `/signup` to dashboard or onboarding based on `onboarding_completed` flag
+- Uses Supabase SSR with cookie management for session handling
+
+**Route Structure:**
+```
+/                    → Landing page (public)
+/login, /signup      → Auth pages (redirects if authenticated)
+/onboarding          → 5-step wizard (requires auth, redirects if completed)
+/dashboard           → Main app (requires auth + onboarding completed)
+/auth/callback       → Supabase OAuth callback handler
+```
+
+### Supabase Client Patterns
+**Browser Client (`lib/supabase.ts`):**
+- Singleton pattern using `createBrowserClient` from `@supabase/ssr`
+- Used in client components for queries, mutations, auth state
+- Import: `import { supabase } from '@/lib/supabase'`
+
+**Server Client (Middleware):**
+- Created per-request with `createServerClient` from `@supabase/ssr`
+- Handles cookie-based session management for SSR
+- Critical for auth checks in middleware
+
+**Important**: Always use the browser client singleton in client components. Never create multiple instances.
+
+### Auto-Save Pattern
+The onboarding wizard uses a debounced auto-save system:
+- Hook: `app/onboarding/hooks/use-auto-save.ts`
+- 500ms debounce delay (configurable)
+- Filters out undefined/null/empty string values before upsert
+- Preserves 0 values (valid for `spouse_income`, `dependents`)
+- Never overwrites `onboarding_completed` via auto-save
+- Uses `dataRef` pattern to avoid stale closures
+- Provides `saveNow()` for manual immediate saves
+
+### FIRE Calculation System
+All FIRE calculations are in `app/onboarding/utils/fire-calculations.ts`:
+- **LIA calculation**: Multi-factor algorithm (age, dependents, savings rate, lifestyle)
+- **Dynamic SWR**: Changes based on FIRE age (3.5%, 4%, 4.5%)
+- **Future value calculations**: Compound interest for assets and monthly savings
+- **Currency formatting**: Indian format helper (`formatFireCurrency`)
+- These calculations are performed client-side and saved to database
 
 ## Coding Conventions
 - **File naming**: kebab-case (user-profile.tsx)
@@ -391,7 +683,7 @@ fix-rls-policies.sql                  # Row Level Security policies
 - **Error handling**: Always wrap API calls in try-catch, return proper status codes
 - **Types**: Define TypeScript interfaces for all data models, use Zod for validation
 - **Styling**: Tailwind + shadcn/ui only (no custom CSS files)
-- **Currency formatting**: Indian number format with lakhs/crores
+- **Currency formatting**: Indian number format with lakhs/crores using `formatFireCurrency` or `Intl.NumberFormat('en-IN')`
 
 ---
 
@@ -414,18 +706,131 @@ RESEND_API_KEY=
 - Database schema with calculated metrics
 - Row Level Security policies configured
 
-**🚧 NEXT:** Week 3-4 - FIRE Dashboard & Net Worth Tracker
-- Dashboard overview with progress indicators
-- Net worth chart over time
-- Asset allocation visualization
-- Manual asset entry
-- CSV upload for bulk import
+**✅ COMPLETED:** Week 3 - FIRE Dashboard (Read-Only)
+- Dashboard page with authentication guards
+- FIRE Status Banner (on-track indicator)
+- 6 Metric Cards (net worth, corpus, income, expenses, savings rate)
+- Net Worth Growth Chart (future projection with Recharts)
+- Asset Allocation Pie Chart (5 categories with rebalancing alerts)
+- Data fetching hook (`use-dashboard-data.ts`)
+- Dashboard calculation utilities
+- Responsive grid layout with dark mode
+
+**✅ COMPLETED:** Week 4 - Interactive Data Management & Settings
+- Quick edit modals for income/expenses/assets
+- Settings page for personal info and FIRE goal editing
+- Impact preview showing calculation changes
+- Date-based age calculation system with date-fns
+- Dedicated settings route at `/dashboard/settings`
+
+**📋 TODO:** Week 5+ - Advanced Features
+- Historical net worth chart (actual values over time)
+- CSV upload for bulk asset import
+- Goal adjustment interface (change FIRE age/lifestyle)
+- What-if calculator
+- Progress indicators and milestones
+- Export reports (PDF/CSV)
+
+---
+
+## Debugging & Common Issues
+
+### Onboarding Data Not Saving
+- Check browser console for auto-save debug logs (prefixed with `🔍 DEBUG`)
+- Verify Supabase RLS policies are correctly configured (`fix-rls-policies.sql`)
+- Ensure `onboarding_completed` is not being set prematurely
+- Check that cleaned data isn't empty (all fields undefined/null)
+
+### Authentication Redirect Loops
+- Clear browser cookies and localStorage
+- Verify middleware is running (check Network tab for redirects)
+- Ensure `user_profiles.onboarding_completed` matches actual state
+- Check `middleware.ts` matcher pattern isn't excluding routes
+
+### Database Migrations
+Apply migrations in order:
+1. `supabase-migration.sql` - Base schema
+2. `add-step4-asset-fields.sql` - Asset columns
+3. `add-step5-fire-goal-fields.sql` - FIRE goal columns
+4. `fix-rls-policies.sql` - RLS policies
+
+### FIRE Calculation Issues
+- All assumptions are hardcoded in `fire-calculations.ts`:
+  - Inflation: 6% annually
+  - Pre-retirement returns: 12% annually
+  - Post-retirement returns: 8% annually (not currently used in corpus calculation)
+- LIA is clamped to 5-20% range
+- SWR changes at age thresholds: <45, 45-55, >55
+
+---
+
+## Date-Based Age Architecture (IMPORTANT)
+
+### Migration from Static Age to Date-Based System
+The application recently migrated from storing `age` as an integer to a date-based system using `date_of_birth`. This is a critical architectural decision.
+
+**Old Approach (Deprecated):**
+```typescript
+age: 32  // Static value, becomes stale
+fire_age: 45  // Static target
+```
+
+**New Approach (Current):**
+```typescript
+date_of_birth: '1993-06-15'  // Source of truth
+fire_target_date: '2038-06-15'  // Computed target
+fire_target_age: 45  // User's preferred expression
+```
+
+### Benefits of Date-Based System
+1. **Automatic age updates**: Age calculated dynamically from DOB
+2. **Precise countdowns**: FIRE countdown to exact date (years, months, days)
+3. **Birthday awareness**: Calculations account for actual birth date
+4. **Historical accuracy**: Past snapshots maintain correct ages
+5. **Future-proof**: No need to manually update ages
+
+### Implementation Guidelines
+1. **Always calculate age, never store it**:
+   ```typescript
+   import { calculateAge } from '@/app/utils/date-helpers';
+   const age = calculateAge(dateOfBirth);
+   ```
+
+2. **Use date-fns for all date operations**:
+   ```typescript
+   import { calculateFireCountdown, formatFireTargetDate } from '@/app/utils/date-helpers';
+   ```
+
+3. **Store dates as DATE type in PostgreSQL**:
+   ```sql
+   date_of_birth DATE NOT NULL
+   fire_target_date DATE NOT NULL
+   ```
+
+4. **Compute FIRE target date from age preference**:
+   ```typescript
+   import { calculateFireTargetDate } from '@/app/utils/date-helpers';
+   const fireDate = calculateFireTargetDate(dateOfBirth, targetAge);
+   ```
+
+### Available Date Helpers
+All in `app/utils/date-helpers.ts`:
+- `calculateAge(dateOfBirth)` - Current age in years
+- `calculateFireTargetDate(dateOfBirth, targetAge)` - Compute FIRE date
+- `calculateYearsToFire(fireTargetDate)` - Years remaining
+- `calculateFireCountdown(fireTargetDate)` - Detailed breakdown (years/months/days)
+- `formatFireTargetDate(date)` - Display format (e.g., "June 2037")
+- `getBirthYear(dateOfBirth)` / `getBirthMonth(dateOfBirth)` - Extract components
+- `isAgeInRange(dateOfBirth, min, max)` - Validation
+- `isFireDateValid(dateOfBirth, fireTargetDate)` - Validation
 
 ---
 
 ## Notes for AI
 - Always use Indian financial terminology (₹, lakhs, crores)
-- Use `Intl.NumberFormat('en-IN')` for currency formatting
+- Use `formatFireCurrency` from `fire-calculations.ts` or `Intl.NumberFormat('en-IN')` for currency formatting
+- **CRITICAL**: Age is calculated from `date_of_birth`, never stored statically. Always use date helpers.
+- Use date-fns for all date operations via `app/utils/date-helpers.ts`
 - Prioritize simplicity over perfection (this is MVP)
 - When unsure, ask before implementing complex solutions
 - Test calculations manually before shipping
@@ -433,3 +838,5 @@ RESEND_API_KEY=
 - Use Framer Motion for all animations
 - Follow established color themes per feature area
 - Maintain dark mode support across all new components
+- Client components must use `'use client'` directive at the top
+- Never create multiple Supabase client instances - always use the singleton from `lib/supabase.ts`

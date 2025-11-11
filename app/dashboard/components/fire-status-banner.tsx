@@ -10,10 +10,15 @@ import { CheckCircle2, AlertTriangle, TrendingUp, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FireStatusBannerProps } from '../types';
 import { formatIndianCurrency } from '../utils/dashboard-calculations';
+import {
+  calculateFireCountdown,
+  formatFireTargetDate,
+} from '@/app/utils/date-helpers';
 
 export function FireStatusBanner({
   isOnTrack,
   fireAge,
+  fireTargetDate,
   fireLifestyleType,
   yearsToFire,
   monthlySavingsNeeded,
@@ -27,6 +32,10 @@ export function FireStatusBanner({
   }[fireLifestyleType];
 
   const savingsGap = Math.max(0, monthlySavingsNeeded - currentMonthlySavings);
+
+  // Calculate detailed countdown (years, months, days)
+  const countdown = fireTargetDate ? calculateFireCountdown(fireTargetDate) : null;
+  const formattedTargetDate = fireTargetDate ? formatFireTargetDate(fireTargetDate) : `${targetYear}`;
 
   return (
     <motion.div
@@ -93,12 +102,19 @@ export function FireStatusBanner({
               {isOnTrack ? (
                 <>
                   You&apos;re on track to achieve <strong>{lifestyleLabel}</strong> by age{' '}
-                  <strong>{fireAge}</strong> ({targetYear})
+                  <strong>{fireAge}</strong> in <strong>{formattedTargetDate}</strong>
                 </>
               ) : (
                 <>
-                  You&apos;re <strong>{yearsToFire} years</strong> from your FIRE goal at age{' '}
-                  <strong>{fireAge}</strong>
+                  You&apos;re{' '}
+                  {countdown ? (
+                    <strong>
+                      {countdown.years}y {countdown.months}m
+                    </strong>
+                  ) : (
+                    <strong>{yearsToFire} years</strong>
+                  )}{' '}
+                  from your FIRE goal at age <strong>{fireAge}</strong>
                 </>
               )}
             </p>
@@ -140,27 +156,87 @@ export function FireStatusBanner({
                 Years to FIRE
               </p>
             </div>
-            <p
-              className={cn(
-                'mt-1 text-3xl font-bold',
-                isOnTrack
-                  ? 'text-emerald-900 dark:text-emerald-100'
-                  : 'text-amber-900 dark:text-amber-100'
-              )}
-            >
-              {yearsToFire}
-            </p>
-            <p
-              className={cn(
-                'text-xs',
-                isOnTrack
-                  ? 'text-emerald-700 dark:text-emerald-300'
-                  : 'text-amber-700 dark:text-amber-300',
-                'opacity-60'
-              )}
-            >
-              By {targetYear}
-            </p>
+            {countdown ? (
+              <>
+                <div className="mt-1 flex items-baseline gap-1.5 justify-center md:justify-end">
+                  <span
+                    className={cn(
+                      'text-3xl font-bold',
+                      isOnTrack
+                        ? 'text-emerald-900 dark:text-emerald-100'
+                        : 'text-amber-900 dark:text-amber-100'
+                    )}
+                  >
+                    {countdown.years}
+                  </span>
+                  <span
+                    className={cn(
+                      'text-sm font-medium',
+                      isOnTrack
+                        ? 'text-emerald-700 dark:text-emerald-300'
+                        : 'text-amber-700 dark:text-amber-300'
+                    )}
+                  >
+                    years
+                  </span>
+                  <span
+                    className={cn(
+                      'text-2xl font-bold',
+                      isOnTrack
+                        ? 'text-emerald-900 dark:text-emerald-100'
+                        : 'text-amber-900 dark:text-amber-100'
+                    )}
+                  >
+                    {countdown.months}
+                  </span>
+                  <span
+                    className={cn(
+                      'text-sm font-medium',
+                      isOnTrack
+                        ? 'text-emerald-700 dark:text-emerald-300'
+                        : 'text-amber-700 dark:text-amber-300'
+                    )}
+                  >
+                    months
+                  </span>
+                </div>
+                <p
+                  className={cn(
+                    'text-xs mt-1',
+                    isOnTrack
+                      ? 'text-emerald-700 dark:text-emerald-300'
+                      : 'text-amber-700 dark:text-amber-300',
+                    'opacity-60'
+                  )}
+                >
+                  Target: {formattedTargetDate}
+                </p>
+              </>
+            ) : (
+              <>
+                <p
+                  className={cn(
+                    'mt-1 text-3xl font-bold',
+                    isOnTrack
+                      ? 'text-emerald-900 dark:text-emerald-100'
+                      : 'text-amber-900 dark:text-amber-100'
+                  )}
+                >
+                  {yearsToFire}
+                </p>
+                <p
+                  className={cn(
+                    'text-xs',
+                    isOnTrack
+                      ? 'text-emerald-700 dark:text-emerald-300'
+                      : 'text-amber-700 dark:text-amber-300',
+                    'opacity-60'
+                  )}
+                >
+                  By {targetYear}
+                </p>
+              </>
+            )}
           </div>
         </div>
       </div>

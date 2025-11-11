@@ -6,15 +6,20 @@
 export interface DashboardData {
   // User info
   userId: string;
-  age: number;
+  userName: string | null;
+  userEmail: string;
+  dateOfBirth: string; // ISO date string (source of truth)
+  age: number; // Computed from dateOfBirth
   city: string;
   maritalStatus: 'Single' | 'Married';
   dependents: number;
 
   // FIRE goal
-  fireAge: number;
+  fireTargetDate: string; // ISO date string (source of truth)
+  fireTargetAge: number; // User's preferred FIRE age (e.g., 45)
+  fireAge: number; // Computed current FIRE age (for backwards compatibility)
   fireLifestyleType: 'lean' | 'standard' | 'fat';
-  yearsToFire: number;
+  yearsToFire: number; // Computed from fireTargetDate
 
   // Income & expenses
   monthlyIncome: number;
@@ -77,11 +82,13 @@ export interface MetricCardProps {
     isPositive: boolean;
   };
   className?: string;
+  onEdit?: () => void;
 }
 
 export interface FireStatusBannerProps {
   isOnTrack: boolean;
-  fireAge: number;
+  fireAge: number; // For backwards compatibility
+  fireTargetDate: string; // ISO date string for precise countdown
   fireLifestyleType: 'lean' | 'standard' | 'fat';
   yearsToFire: number;
   monthlySavingsNeeded: number;

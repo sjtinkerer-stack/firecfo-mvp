@@ -30,6 +30,11 @@ import {
   calculateLifestyleInflationAdjustment,
   calculateFireMetrics,
 } from '../utils/fire-calculations'
+import {
+  calculateAge,
+  createDateFromYearMonth,
+  calculateFireTargetDate,
+} from '@/app/utils/date-helpers'
 
 const TOTAL_STEPS = 5
 
@@ -40,6 +45,9 @@ export function OnboardingWizard() {
   const [completedSteps, setCompletedSteps] = useState<number[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showResumeBanner, setShowResumeBanner] = useState(false)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [userName, setUserName] = useState<string | null>(null)
+  const [userEmail, setUserEmail] = useState<string>('')
   const [isInitialLoading, setIsInitialLoading] = useState(true)
   const [navigationDirection, setNavigationDirection] = useState<'forward' | 'back' | null>(null)
   const retryCountRef = useRef(0)
@@ -50,7 +58,8 @@ export function OnboardingWizard() {
   const form = useForm<OnboardingData>({
     resolver: zodResolver(onboardingSchema),
     defaultValues: {
-      age: undefined,
+      birth_year: undefined,
+      birth_month: undefined,
       city: undefined,
       marital_status: undefined,
       dependents: undefined,
@@ -62,14 +71,15 @@ export function OnboardingWizard() {
       cash: 0,
       real_estate: 0,
       other_assets: 0,
-      fire_age: undefined,
+      fire_target_age: undefined,
       fire_lifestyle_type: 'standard',
     },
     mode: 'onChange',
   })
 
   // Get form data for auto-save - watch specific fields instead of entire form
-  const age = useWatch({ control: form.control, name: 'age' })
+  const birth_year = useWatch({ control: form.control, name: 'birth_year' })
+  const birth_month = useWatch({ control: form.control, name: 'birth_month' })
   const city = useWatch({ control: form.control, name: 'city' })
   const marital_status = useWatch({ control: form.control, name: 'marital_status' })
   const dependents = useWatch({ control: form.control, name: 'dependents' })
@@ -81,8 +91,16 @@ export function OnboardingWizard() {
   const cash = useWatch({ control: form.control, name: 'cash' })
   const real_estate = useWatch({ control: form.control, name: 'real_estate' })
   const other_assets = useWatch({ control: form.control, name: 'other_assets' })
-  const fire_age = useWatch({ control: form.control, name: 'fire_age' })
+  const fire_target_age = useWatch({ control: form.control, name: 'fire_target_age' })
   const fire_lifestyle_type = useWatch({ control: form.control, name: 'fire_lifestyle_type' })
+
+  // Compute age from DOB
+  const age = birth_year && birth_month
+    ? calculateAge(createDateFromYearMonth(birth_year, birth_month))
+    : undefined
+
+  // Compute fire_age from fire_target_age (for backwards compatibility)
+  const fire_age = fire_target_age
 
   // Calculate FIRE metrics when relevant fields are available
   const calculatedMetrics = useMemo(() => {
@@ -140,8 +158,20 @@ export function OnboardingWizard() {
   ])
 
   // Combine watched fields + calculated metrics into formData object
+  // Transform birth_year/birth_month to date_of_birth (ISO string)
+  const date_of_birth = birth_year && birth_month
+    ? createDateFromYearMonth(birth_year, birth_month).toISOString().split('T')[0] // YYYY-MM-DD format
+    : undefined
+
+  // Transform fire_target_age to fire_target_date (ISO string)
+  const fire_target_date = birth_year && birth_month && fire_target_age
+    ? calculateFireTargetDate(createDateFromYearMonth(birth_year, birth_month), fire_target_age).toISOString().split('T')[0]
+    : undefined
+
   const formData = {
-    age,
+    date_of_birth,
+    fire_target_age,
+    fire_target_date,
     city,
     marital_status,
     dependents,
@@ -153,7 +183,6 @@ export function OnboardingWizard() {
     cash,
     real_estate,
     other_assets,
-    fire_age,
     fire_lifestyle_type,
     ...calculatedMetrics, // Include calculated FIRE metrics
   }
@@ -232,11 +261,22 @@ export function OnboardingWizard() {
         }
 
         if (profile && !error) {
+          // Convert date_of_birth back to birth_year and birth_month if it exists
+          let birth_year = undefined
+          let birth_month = undefined
+          if (profile.date_of_birth) {
+            const dob = new Date(profile.date_of_birth)
+            birth_year = dob.getFullYear()
+            birth_month = dob.getMonth() + 1 // getMonth() is 0-indexed
+          }
+
           // Show resume banner if user has partial data
-          const hasPartialData = !!(profile.age || profile.city || profile.marital_status || profile.monthly_income)
+          const hasPartialData = !!(profile.date_of_birth || profile.city || profile.marital_status || profile.monthly_income)
           console.log('Profile loaded:', {
             hasPartialData,
-            age: profile.age,
+            date_of_birth: profile.date_of_birth,
+            birth_year,
+            birth_month,
             city: profile.city,
             marital_status: profile.marital_status,
             monthly_income: profile.monthly_income,
@@ -246,7 +286,8 @@ export function OnboardingWizard() {
 
           // Pre-fill form with existing data
           form.reset({
-            age: profile.age,
+            birth_year,
+            birth_month,
             city: profile.city,
             marital_status: profile.marital_status,
             dependents: profile.dependents,
@@ -258,7 +299,7 @@ export function OnboardingWizard() {
             cash: profile.cash || 0,
             real_estate: profile.real_estate || 0,
             other_assets: profile.other_assets || 0,
-            fire_age: profile.fire_age,
+            fire_target_age: profile.fire_target_age,
             fire_lifestyle_type: profile.fire_lifestyle_type || 'standard',
           })
 
@@ -267,7 +308,7 @@ export function OnboardingWizard() {
           const completed: number[] = []
           const step = parseInt(searchParams.get('step') || '1')
 
-          if (profile.age && profile.city && profile.marital_status !== undefined && profile.dependents !== undefined && step > 1) {
+          if (profile.date_of_birth && profile.city && profile.marital_status !== undefined && profile.dependents !== undefined && step > 1) {
             completed.push(1)
           }
           if (profile.monthly_income && step > 2) {
@@ -280,7 +321,7 @@ export function OnboardingWizard() {
           if (step > 4) {
             completed.push(4)
           }
-          if (profile.fire_age && profile.fire_lifestyle_type && step > 5) {
+          if (profile.fire_target_age && profile.fire_lifestyle_type && step > 5) {
             completed.push(5)
           }
           setCompletedSteps(completed)
@@ -335,7 +376,8 @@ export function OnboardingWizard() {
         // Use strict step1Schema for validation
         const { step1Schema } = await import('../types')
         const result = step1Schema.safeParse({
-          age: formValues.age,
+          birth_year: formValues.birth_year,
+          birth_month: formValues.birth_month,
           city: formValues.city,
           marital_status: formValues.marital_status,
           dependents: formValues.dependents,
@@ -389,16 +431,16 @@ export function OnboardingWizard() {
         return true
       }
       case 5: {
-        // Ensure fire_age is not null/undefined
-        if (!formValues.fire_age) {
-          form.setError('fire_age', { message: 'Please select your target FIRE age' })
+        // Ensure fire_target_age is not null/undefined
+        if (!formValues.fire_target_age) {
+          form.setError('fire_target_age', { message: 'Please select your target FIRE age' })
           return false
         }
 
         // Use strict step5Schema for validation
         const { step5Schema } = await import('../types')
         const result = step5Schema.safeParse({
-          fire_age: formValues.fire_age,
+          fire_target_age: formValues.fire_target_age,
           fire_lifestyle_type: formValues.fire_lifestyle_type,
         })
 
@@ -410,9 +452,14 @@ export function OnboardingWizard() {
           return false
         }
 
-        // Additional validation: fire_age must be > current age
-        if (formValues.fire_age && formValues.age && formValues.fire_age <= formValues.age) {
-          form.setError('fire_age', { message: `FIRE age must be greater than your current age (${formValues.age})` })
+        // Compute current age from birth_year/birth_month
+        const currentAge = formValues.birth_year && formValues.birth_month
+          ? calculateAge(createDateFromYearMonth(formValues.birth_year, formValues.birth_month))
+          : undefined
+
+        // Additional validation: fire_target_age must be > current age
+        if (formValues.fire_target_age && currentAge && formValues.fire_target_age <= currentAge) {
+          form.setError('fire_target_age', { message: `FIRE age must be greater than your current age (${currentAge})` })
           return false
         }
 
@@ -429,21 +476,22 @@ export function OnboardingWizard() {
       case 1:
         // Check for actual values, not just "not undefined" (handles null from DB)
         return !!(
-          formData.age &&
-          formData.city &&
-          formData.marital_status &&
-          formData.dependents !== undefined &&
-          formData.dependents !== null
+          birth_year &&
+          birth_month &&
+          city &&
+          marital_status &&
+          dependents !== undefined &&
+          dependents !== null
         )
       case 2:
-        return !!(formData.monthly_income && formData.monthly_income > 0)
+        return !!(monthly_income && monthly_income > 0)
       case 3:
-        return !!(formData.monthly_expenses && formData.monthly_expenses > 0)
+        return !!(monthly_expenses && monthly_expenses > 0)
       case 4:
         // Step 4 is optional, always return true
         return true
       case 5:
-        return !!(formData.fire_age && formData.fire_age > (formData.age || 0) && formData.fire_lifestyle_type)
+        return !!(fire_age && age && fire_age > age && fire_lifestyle_type)
       default:
         return true
     }
@@ -483,7 +531,7 @@ export function OnboardingWizard() {
     if (currentStep < TOTAL_STEPS) {
       navigateToStep(currentStep + 1)
     } else {
-      // Final step - mark onboarding as completed and redirect to dashboard
+      // Final step - mark onboarding as completed and show success modal
       setIsSubmitting(true)
       try {
         const {
@@ -491,6 +539,10 @@ export function OnboardingWizard() {
         } = await supabase.auth.getUser()
 
         if (user) {
+          // Store user name and email for success modal
+          setUserName(user.user_metadata?.full_name || user.user_metadata?.name || null)
+          setUserEmail(user.email || '')
+
           const { error } = await supabase
             .from('user_profiles')
             .update({ onboarding_completed: true })
@@ -499,12 +551,21 @@ export function OnboardingWizard() {
           if (error) {
             console.error('Error marking onboarding complete:', error)
           }
+
+          // Show success modal
+          setShowSuccessModal(true)
+
+          // Auto-redirect after 4 seconds
+          setTimeout(() => {
+            router.push('/dashboard')
+          }, 4000)
         }
       } catch (error: unknown) {
         console.error('Error completing onboarding:', error)
+        // Fallback: redirect to dashboard anyway
+        router.push('/dashboard')
       } finally {
         setIsSubmitting(false)
-        router.push('/dashboard')
       }
     }
   }
@@ -720,6 +781,101 @@ export function OnboardingWizard() {
             🔒 Your data is encrypted and secure
           </p>
         </div>
+
+        {/* Success Modal */}
+        <AnimatePresence>
+          {showSuccessModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                transition={{ type: 'spring', duration: 0.5 }}
+                className="w-full max-w-md"
+              >
+                <Card className="bg-white dark:bg-gray-900 border-2 border-emerald-500/50 shadow-2xl">
+                  <CardContent className="p-8 text-center">
+                    {/* Success Icon */}
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+                      className="mx-auto w-20 h-20 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center mb-6"
+                    >
+                      <Check className="w-10 h-10 text-white" />
+                    </motion.div>
+
+                    {/* Welcome Message */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                    >
+                      <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+                        Welcome to FireCFO{userName ? `, ${userName.split(' ')[0]}` : ''}!
+                      </h2>
+                      {userEmail && (
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{userEmail}</p>
+                      )}
+                      <p className="text-lg text-gray-600 dark:text-gray-300 mb-6">
+                        Your personalized FIRE plan is ready
+                      </p>
+                    </motion.div>
+
+                    {/* Feature highlights */}
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.4 }}
+                      className="space-y-3 mb-6 text-left"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                        </div>
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                          Track your progress toward financial independence
+                        </p>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                        </div>
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                          Visualize your net worth growth over time
+                        </p>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                        </div>
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                          Get personalized insights to reach your goals faster
+                        </p>
+                      </div>
+                    </motion.div>
+
+                    {/* Redirect message */}
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.5 }}
+                      className="flex items-center justify-center gap-2 text-sm text-gray-500 dark:text-gray-400"
+                    >
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Taking you to your dashboard...</span>
+                    </motion.div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </AnimatedBackground>
   )

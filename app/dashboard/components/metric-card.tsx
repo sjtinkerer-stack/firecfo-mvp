@@ -6,8 +6,9 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { ArrowUpIcon, ArrowDownIcon } from 'lucide-react';
+import { ArrowUpIcon, ArrowDownIcon, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import { MetricCardProps } from '../types';
 
 const colorThemes = {
@@ -56,6 +57,7 @@ export function MetricCard({
   colorTheme = 'emerald',
   trend,
   className,
+  onEdit,
 }: MetricCardProps) {
   const theme = colorThemes[colorTheme];
 
@@ -74,8 +76,24 @@ export function MetricCard({
     >
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          {/* Title */}
-          <p className={cn('text-sm font-medium', theme.text, 'opacity-70')}>{title}</p>
+          {/* Title with Edit Button */}
+          <div className="flex items-center justify-between">
+            <p className={cn('text-sm font-medium', theme.text, 'opacity-70')}>{title}</p>
+            {onEdit && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onEdit}
+                className={cn(
+                  'h-7 w-7 p-0 opacity-60 hover:opacity-100',
+                  theme.accent
+                )}
+                title={`Edit ${title}`}
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
 
           {/* Value */}
           <p className={cn('mt-2 text-3xl font-bold', theme.text)}>{value}</p>

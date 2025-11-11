@@ -5,11 +5,14 @@
 
 'use client';
 
+import { useState } from 'react';
 import { useDashboardData } from '../hooks/use-dashboard-data';
 import { FireStatusBanner } from './fire-status-banner';
 import { MetricCard } from './metric-card';
 import { NetWorthChart } from './networth-chart';
 import { AssetAllocationChart } from './asset-allocation-chart';
+import { EditIncomeExpensesModal } from './edit-income-expenses-modal';
+import { EditAssetsModal } from './edit-assets-modal';
 import {
   generateNetWorthChartData,
   generateAssetAllocationData,
@@ -28,7 +31,9 @@ import {
 } from 'lucide-react';
 
 export function DashboardOverview() {
-  const { data, loading, error } = useDashboardData();
+  const { data, loading, error, refetch } = useDashboardData();
+  const [isIncomeExpensesModalOpen, setIsIncomeExpensesModalOpen] = useState(false);
+  const [isAssetsModalOpen, setIsAssetsModalOpen] = useState(false);
 
   // Loading state
   if (loading) {
@@ -70,6 +75,7 @@ export function DashboardOverview() {
       <FireStatusBanner
         isOnTrack={data.isOnTrack}
         fireAge={data.fireAge}
+        fireTargetDate={data.fireTargetDate}
         fireLifestyleType={data.fireLifestyleType}
         yearsToFire={data.yearsToFire}
         monthlySavingsNeeded={data.monthlySavingsNeeded}
@@ -85,6 +91,7 @@ export function DashboardOverview() {
           subtitle={formatFullIndianCurrency(data.currentNetworth)}
           icon={<Wallet className="h-6 w-6" />}
           colorTheme="violet"
+          onEdit={() => setIsAssetsModalOpen(true)}
         />
 
         {/* Required FIRE Corpus */}
@@ -112,6 +119,7 @@ export function DashboardOverview() {
           subtitle={formatFullIndianCurrency(householdIncome)}
           icon={<DollarSign className="h-6 w-6" />}
           colorTheme="emerald"
+          onEdit={() => setIsIncomeExpensesModalOpen(true)}
         />
 
         {/* Monthly Expenses */}
@@ -121,6 +129,7 @@ export function DashboardOverview() {
           subtitle={formatFullIndianCurrency(data.monthlyExpenses)}
           icon={<TrendingDown className="h-6 w-6" />}
           colorTheme="blue"
+          onEdit={() => setIsIncomeExpensesModalOpen(true)}
         />
 
         {/* Savings Rate */}
@@ -177,6 +186,44 @@ export function DashboardOverview() {
           </div>
         </div>
       </div>
+
+      {/* Edit Modals */}
+      <EditIncomeExpensesModal
+        open={isIncomeExpensesModalOpen}
+        onOpenChange={setIsIncomeExpensesModalOpen}
+        currentData={{
+          monthlyIncome: data.monthlyIncome,
+          spouseIncome: data.spouseIncome,
+          monthlyExpenses: data.monthlyExpenses,
+          age: data.age,
+          dependents: data.dependents,
+          fireAge: data.fireAge,
+          fireLifestyleType: data.fireLifestyleType,
+          currentNetWorth: data.currentNetworth,
+          maritalStatus: data.maritalStatus,
+        }}
+        onSave={refetch}
+      />
+
+      <EditAssetsModal
+        open={isAssetsModalOpen}
+        onOpenChange={setIsAssetsModalOpen}
+        currentData={{
+          equity: data.equity,
+          debt: data.debt,
+          cash: data.cash,
+          realEstate: data.realEstate,
+          otherAssets: data.otherAssets,
+          age: data.age,
+          dependents: data.dependents,
+          fireAge: data.fireAge,
+          fireLifestyleType: data.fireLifestyleType,
+          monthlyIncome: data.monthlyIncome,
+          spouseIncome: data.spouseIncome,
+          monthlyExpenses: data.monthlyExpenses,
+        }}
+        onSave={refetch}
+      />
     </div>
   );
 }

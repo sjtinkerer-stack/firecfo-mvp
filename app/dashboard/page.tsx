@@ -10,12 +10,14 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { DashboardOverview } from './components/dashboard-overview';
-import { LogOut } from 'lucide-react';
+import { LogOut, Settings } from 'lucide-react';
 import type { User, AuthChangeEvent, Session } from '@supabase/supabase-js';
 
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [hasChecked, setHasChecked] = useState(false);
 
@@ -60,6 +62,8 @@ export default function DashboardPage() {
 
         // All checks passed - user can access dashboard
         setUser(user);
+        setUserName(user.user_metadata?.full_name || user.user_metadata?.name || null);
+        setUserEmail(user.email || '');
         setLoading(false);
         setHasChecked(true);
       } catch (error: unknown) {
@@ -111,16 +115,25 @@ export default function DashboardPage() {
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100">
-              Your FIRE Dashboard
+              Welcome back{userName ? `, ${userName.split(' ')[0]}` : ''}!
             </h1>
+            {userEmail && (
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-500">{userEmail}</p>
+            )}
             <p className="mt-2 text-lg text-gray-600 dark:text-gray-400">
               Track your progress toward financial independence
             </p>
           </div>
-          <Button variant="outline" onClick={handleLogout}>
-            <LogOut className="mr-2 h-4 w-4" />
-            Log Out
-          </Button>
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={() => router.push('/dashboard/settings')}>
+              <Settings className="mr-2 h-4 w-4" />
+              Settings
+            </Button>
+            <Button variant="outline" onClick={handleLogout}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Log Out
+            </Button>
+          </div>
         </div>
 
         {/* Dashboard Content */}
