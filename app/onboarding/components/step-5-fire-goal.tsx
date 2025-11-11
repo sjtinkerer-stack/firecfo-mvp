@@ -342,38 +342,34 @@ export function Step5FireGoal({ form, navigationDirection }: Step5FireGoalProps)
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.4, type: 'spring', delay: 0.1 }}
-          className={`p-6 bg-gradient-to-br border-2 rounded-xl space-y-5 ${
-            currentNetWorth === 0
-              ? 'from-amber-50 to-yellow-100 dark:from-amber-950/40 dark:to-yellow-900/40 border-amber-300 dark:border-amber-800/50'
-              : 'from-orange-50 to-amber-100 dark:from-orange-950/40 dark:to-amber-900/40 border-orange-300 dark:border-orange-800/50'
-          }`}
+          className="p-6 bg-gradient-to-br from-gray-50 to-slate-50 dark:from-gray-900/40 dark:to-slate-900/40 border-2 border-gray-300 dark:border-gray-700 rounded-xl space-y-5"
         >
           {/* Header */}
           <div className="flex items-center gap-2">
-            <Target className={`w-5 h-5 ${currentNetWorth === 0 ? 'text-amber-600 dark:text-amber-400' : 'text-orange-600 dark:text-orange-400'}`} strokeWidth={1.5} />
-            <h3 className={`text-sm font-semibold uppercase tracking-wide ${currentNetWorth === 0 ? 'text-amber-900 dark:text-amber-100' : 'text-orange-900 dark:text-orange-100'}`}>
+            <Target className="w-5 h-5 text-gray-600 dark:text-gray-400" strokeWidth={1.5} />
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-900 dark:text-gray-100">
               Your FIRE Plan
             </h3>
           </div>
 
           {/* Post-FIRE Expense */}
           <div>
-            <p className={`text-sm mb-1 ${currentNetWorth === 0 ? 'text-amber-700 dark:text-amber-300' : 'text-orange-700 dark:text-orange-300'}`}>Post-FIRE Monthly Expense</p>
-            <p className={`text-3xl font-bold ${currentNetWorth === 0 ? 'text-amber-900 dark:text-amber-100' : 'text-orange-900 dark:text-orange-100'}`}>
+            <p className="text-sm mb-1 text-gray-700 dark:text-gray-300">Post-FIRE Monthly Expense</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
               ₹{formatIndianCurrency(Math.round(fireMetrics.postFireMonthlyExpense))}
-              <span className={`text-base font-normal ml-2 ${currentNetWorth === 0 ? 'text-amber-700 dark:text-amber-300' : 'text-orange-700 dark:text-orange-300'}`}>/ month</span>
+              <span className="text-base font-normal ml-2 text-gray-700 dark:text-gray-300">/ month</span>
             </p>
-            <p className={`text-xs mt-1 ${currentNetWorth === 0 ? 'text-amber-600 dark:text-amber-400' : 'text-orange-600 dark:text-orange-400'}`}>
+            <p className="text-xs mt-1 text-gray-600 dark:text-gray-400">
               (₹{formatIndianCurrency(monthlyExpenses)} current + {LIA}% lifestyle adj)
             </p>
           </div>
 
-          <div className={`h-px ${currentNetWorth === 0 ? 'bg-amber-300 dark:bg-amber-800' : 'bg-orange-300 dark:bg-orange-800'}`} />
+          <div className="h-px bg-gray-300 dark:bg-gray-700" />
 
           {/* Required Corpus */}
           <div>
-            <p className={`text-sm mb-1 ${currentNetWorth === 0 ? 'text-amber-700 dark:text-amber-300' : 'text-orange-700 dark:text-orange-300'}`}>Required FIRE Corpus</p>
-            <p className={`text-4xl font-bold ${currentNetWorth === 0 ? 'text-amber-900 dark:text-amber-100' : 'text-orange-900 dark:text-orange-100'}`}>
+            <p className="text-sm mb-1 text-gray-700 dark:text-gray-300">Required FIRE Corpus</p>
+            <p className="text-4xl font-bold text-gray-900 dark:text-gray-100">
               {formatFireCurrency(fireMetrics.requiredCorpus)}
             </p>
           </div>
@@ -381,8 +377,8 @@ export function Step5FireGoal({ form, navigationDirection }: Step5FireGoalProps)
           {/* Current Net Worth - Hide when ₹0 */}
           {currentNetWorth > 0 && (
             <div>
-              <p className="text-sm text-orange-700 dark:text-orange-300 mb-1">Current Net Worth</p>
-              <p className="text-2xl font-semibold text-orange-800 dark:text-orange-200">
+              <p className="text-sm text-gray-700 dark:text-gray-300 mb-1">Current Net Worth</p>
+              <p className="text-2xl font-semibold text-gray-800 dark:text-gray-200">
                 {formatFireCurrency(fireMetrics.currentNetWorth)}
               </p>
             </div>
@@ -391,26 +387,26 @@ export function Step5FireGoal({ form, navigationDirection }: Step5FireGoalProps)
           {/* Corpus Gap - Hide when ₹0 (redundant with Required Corpus) */}
           {currentNetWorth > 0 && (
             <div>
-              <p className="text-sm text-orange-700 dark:text-orange-300 mb-1">Corpus Gap</p>
-              <p className="text-2xl font-semibold text-orange-800 dark:text-orange-200">
+              <p className="text-sm text-gray-700 dark:text-gray-300 mb-1">Corpus Gap</p>
+              <p className="text-2xl font-semibold text-gray-800 dark:text-gray-200">
                 {formatFireCurrency(fireMetrics.corpusGap)}
               </p>
             </div>
           )}
 
-          <div className={`h-px ${currentNetWorth === 0 ? 'bg-amber-300 dark:bg-amber-800' : 'bg-orange-300 dark:bg-orange-800'}`} />
+          <div className="h-px bg-gray-300 dark:bg-gray-700" />
 
           {/* Projection */}
           <div className="space-y-3">
-            <p className={`text-sm font-medium ${currentNetWorth === 0 ? 'text-amber-800 dark:text-amber-200' : 'text-orange-800 dark:text-orange-200'}`}>
+            <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
               At your current savings rate of ₹{formatIndianCurrency(Math.round(fireMetrics.monthlySavings))}/month:
             </p>
 
             <div>
-              <p className={`text-sm mb-1 ${currentNetWorth === 0 ? 'text-amber-700 dark:text-amber-300' : 'text-orange-700 dark:text-orange-300'}`}>
+              <p className="text-sm mb-1 text-gray-700 dark:text-gray-300">
                 Projected Corpus in {fireMetrics.yearsToFire} years
               </p>
-              <p className={`text-3xl font-bold ${currentNetWorth === 0 ? 'text-amber-900 dark:text-amber-100' : 'text-orange-900 dark:text-orange-100'}`}>
+              <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
                 {formatFireCurrency(fireMetrics.projectedCorpusAtFire)}
                 {fireMetrics.isOnTrack && (
                   <span className="text-lg ml-2 text-green-600 dark:text-green-400">✓</span>
@@ -448,11 +444,7 @@ export function Step5FireGoal({ form, navigationDirection }: Step5FireGoalProps)
           <button
             type="button"
             onClick={() => setShowCalculationDetails(!showCalculationDetails)}
-            className={`flex items-center gap-2 text-sm font-medium transition-colors ${
-              currentNetWorth === 0
-                ? 'text-amber-700 dark:text-amber-300 hover:text-amber-900 dark:hover:text-amber-100'
-                : 'text-orange-700 dark:text-orange-300 hover:text-orange-900 dark:hover:text-orange-100'
-            }`}
+            className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
           >
             <Calculator className="w-4 h-4" />
             How we calculated this
@@ -469,36 +461,32 @@ export function Step5FireGoal({ form, navigationDirection }: Step5FireGoalProps)
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.3 }}
-              className={`p-4 rounded-lg space-y-3 text-sm ${
-                currentNetWorth === 0
-                  ? 'bg-amber-100 dark:bg-amber-950/30'
-                  : 'bg-orange-100 dark:bg-orange-950/30'
-              }`}
+              className="p-4 rounded-lg space-y-3 text-sm bg-gray-100 dark:bg-gray-900/30"
             >
               <div>
-                <p className={`font-semibold mb-2 ${currentNetWorth === 0 ? 'text-amber-900 dark:text-amber-100' : 'text-orange-900 dark:text-orange-100'}`}>Post-FIRE Expense:</p>
-                <p className={currentNetWorth === 0 ? 'text-amber-800 dark:text-amber-200' : 'text-orange-800 dark:text-orange-200'}>
+                <p className="font-semibold mb-2 text-gray-900 dark:text-gray-100">Post-FIRE Expense:</p>
+                <p className="text-gray-800 dark:text-gray-200">
                   Base monthly expense: ₹{formatIndianCurrency(monthlyExpenses)}
                 </p>
-                <p className={currentNetWorth === 0 ? 'text-amber-800 dark:text-amber-200' : 'text-orange-800 dark:text-orange-200'}>Lifestyle inflation: +{LIA}%</p>
-                <p className={currentNetWorth === 0 ? 'text-amber-800 dark:text-amber-200' : 'text-orange-800 dark:text-orange-200'}>
+                <p className="text-gray-800 dark:text-gray-200">Lifestyle inflation: +{LIA}%</p>
+                <p className="text-gray-800 dark:text-gray-200">
                   = Post-FIRE expense: ₹{formatIndianCurrency(Math.round(fireMetrics.postFireMonthlyExpense))}
                 </p>
               </div>
 
               <div>
-                <p className={`font-semibold mb-2 ${currentNetWorth === 0 ? 'text-amber-900 dark:text-amber-100' : 'text-orange-900 dark:text-orange-100'}`}>Required Corpus:</p>
-                <p className={currentNetWorth === 0 ? 'text-amber-800 dark:text-amber-200' : 'text-orange-800 dark:text-orange-200'}>
+                <p className="font-semibold mb-2 text-gray-900 dark:text-gray-100">Required Corpus:</p>
+                <p className="text-gray-800 dark:text-gray-200">
                   Annual expense: ₹{formatIndianCurrency(Math.round(fireMetrics.postFireAnnualExpense))}
                 </p>
-                <p className={currentNetWorth === 0 ? 'text-amber-800 dark:text-amber-200' : 'text-orange-800 dark:text-orange-200'}>
+                <p className="text-gray-800 dark:text-gray-200">
                   Inflation adjusted ({fireMetrics.yearsToFire} yrs): ₹
                   {formatIndianCurrency(Math.round(fireMetrics.inflationAdjustedAnnualExpense))}
                 </p>
-                <p className={currentNetWorth === 0 ? 'text-amber-800 dark:text-amber-200' : 'text-orange-800 dark:text-orange-200'}>
+                <p className="text-gray-800 dark:text-gray-200">
                   × {fireMetrics.corpusMultiplier.toFixed(1)} ({fireMetrics.safeWithdrawalRate}% SWR): {formatFireCurrency(fireMetrics.requiredCorpus)}
                 </p>
-                <p className={`text-xs mt-1 italic ${currentNetWorth === 0 ? 'text-amber-700 dark:text-amber-300' : 'text-orange-700 dark:text-orange-300'}`}>
+                <p className="text-xs mt-1 italic text-gray-700 dark:text-gray-300">
                   {fireAge < 45 && '• Conservative 3.5% SWR for early retirement (longer withdrawal period)'}
                   {fireAge >= 45 && fireAge <= 55 && '• Standard 4% SWR for traditional retirement timeline'}
                   {fireAge > 55 && '• Optimistic 4.5% SWR for later retirement (shorter withdrawal period)'}
@@ -506,28 +494,28 @@ export function Step5FireGoal({ form, navigationDirection }: Step5FireGoalProps)
               </div>
 
               <div>
-                <p className={`font-semibold mb-2 ${currentNetWorth === 0 ? 'text-amber-900 dark:text-amber-100' : 'text-orange-900 dark:text-orange-100'}`}>
+                <p className="font-semibold mb-2 text-gray-900 dark:text-gray-100">
                   Lifestyle Adjustment Breakdown:
                 </p>
-                <p className={currentNetWorth === 0 ? 'text-amber-800 dark:text-amber-200' : 'text-orange-800 dark:text-orange-200'}>• Base: {liaBreakdown.base}%</p>
-                <p className={currentNetWorth === 0 ? 'text-amber-800 dark:text-amber-200' : 'text-orange-800 dark:text-orange-200'}>
+                <p className="text-gray-800 dark:text-gray-200">• Base: {liaBreakdown.base}%</p>
+                <p className="text-gray-800 dark:text-gray-200">
                   • Age factor ({age}): {liaBreakdown.ageFactor > 0 ? '+' : ''}
                   {liaBreakdown.ageFactor}%
                 </p>
-                <p className={currentNetWorth === 0 ? 'text-amber-800 dark:text-amber-200' : 'text-orange-800 dark:text-orange-200'}>
+                <p className="text-gray-800 dark:text-gray-200">
                   • Dependents ({dependents}): {liaBreakdown.dependentsFactor > 0 ? '+' : ''}
                   {liaBreakdown.dependentsFactor}%
                 </p>
-                <p className={currentNetWorth === 0 ? 'text-amber-800 dark:text-amber-200' : 'text-orange-800 dark:text-orange-200'}>
+                <p className="text-gray-800 dark:text-gray-200">
                   • Savings rate ({Math.round(savingsRate)}%): {liaBreakdown.savingsRateFactor > 0 ? '+' : ''}
                   {liaBreakdown.savingsRateFactor}%
                 </p>
-                <p className={currentNetWorth === 0 ? 'text-amber-800 dark:text-amber-200' : 'text-orange-800 dark:text-orange-200'}>
+                <p className="text-gray-800 dark:text-gray-200">
                   • {fireLifestyleType.charAt(0).toUpperCase() + fireLifestyleType.slice(1)} FIRE:{' '}
                   {liaBreakdown.lifestyleMultiplier > 0 ? '+' : ''}
                   {liaBreakdown.lifestyleMultiplier}%
                 </p>
-                <p className={`font-semibold mt-1 ${currentNetWorth === 0 ? 'text-amber-800 dark:text-amber-200' : 'text-orange-800 dark:text-orange-200'}`}>
+                <p className="font-semibold mt-1 text-gray-800 dark:text-gray-200">
                   Total: {liaBreakdown.total}%
                 </p>
               </div>
