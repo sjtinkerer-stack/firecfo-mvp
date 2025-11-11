@@ -250,8 +250,21 @@ export function EditFireGoalModal({
   ];
 
   // Check if user has made any changes
-  const hasChanges =
+  const anyFieldChanged =
     fireTargetAge !== currentData.fireTargetAge || lifestyleType !== currentData.fireLifestyleType;
+
+  // Smart hasChanges: Only show preview if calculations meaningfully change
+  const hasChanges = (() => {
+    if (!anyFieldChanged) return false;
+    if (!previewMetrics) return false;
+
+    // Check if calculations meaningfully changed
+    const corpusChangeMeaningful = Math.abs(previewMetrics.requiredCorpus - currentData.currentRequiredCorpus) > 50000; // >₹50K
+    const swrChangeMeaningful = Math.abs(previewMetrics.safeWithdrawalRate - currentData.currentSWR) > 0.1; // >0.1%
+    const yearsChangeMeaningful = Math.abs(previewMetrics.yearsToFire - currentData.currentYearsToFire) > 0; // Any year change
+
+    return corpusChangeMeaningful || swrChangeMeaningful || yearsChangeMeaningful;
+  })();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

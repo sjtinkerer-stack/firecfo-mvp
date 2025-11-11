@@ -307,11 +307,32 @@ export function EditPersonalInfoModal({
   const initialMonth = currentData.dateOfBirth && currentData.dateOfBirth.trim()
     ? getBirthMonth(currentData.dateOfBirth)
     : 1;
-  const hasChanges =
+
+  // Calculate if changes actually affect calculations
+  const anyFieldChanged =
     birthYear !== initialYear ||
     birthMonth !== initialMonth ||
     dependents !== currentData.dependents ||
     maritalStatus !== currentData.maritalStatus;
+
+  // Smart hasChanges: Only show preview if calculations actually change
+  const hasChanges = (() => {
+    if (!anyFieldChanged) return false;
+    if (!previewMetrics) return false;
+
+    // Calculate effective spouse income for both states
+    const oldEffectiveSpouseIncome = currentData.maritalStatus === 'Single' ? 0 : currentData.spouseIncome;
+    const newEffectiveSpouseIncome = maritalStatus === 'Single' ? 0 : currentData.spouseIncome;
+
+    // If spouse income actually changes, show preview
+    if (oldEffectiveSpouseIncome !== newEffectiveSpouseIncome) return true;
+
+    // Check if calculations meaningfully changed
+    const corpusChangeMeaningful = Math.abs(previewMetrics.requiredCorpus - currentData.currentRequiredCorpus) > 50000; // >₹50K
+    const swrChangeMeaningful = Math.abs(previewMetrics.safeWithdrawalRate - currentData.currentSWR) > 0.1; // >0.1%
+
+    return corpusChangeMeaningful || swrChangeMeaningful;
+  })();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

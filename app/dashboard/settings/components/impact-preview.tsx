@@ -136,7 +136,7 @@ export function ImpactPreview({ before, after }: ImpactPreviewProps) {
               {formatCurrency(after.requiredCorpus)}
             </span>
           </div>
-          {Math.abs(corpusChange) > 1000 && (
+          {Math.abs(corpusChange) > 50000 && (
             <div className={cn('mt-1 flex items-center gap-1 text-xs', getChangeColor(corpusChange, false))}>
               {getChangeIcon(corpusChange, false)}
               <span>
@@ -149,29 +149,31 @@ export function ImpactPreview({ before, after }: ImpactPreviewProps) {
         </div>
       </div>
 
-      {/* Summary */}
-      <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-950/20">
-        <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-          💡 Summary
-        </p>
-        <ul className="mt-2 space-y-1 text-xs text-blue-800 dark:text-blue-200">
-          {yearsChange > 0 && (
-            <li>✅ {yearsChange} more {yearsChange === 1 ? 'year' : 'years'} to save and grow your wealth</li>
-          )}
-          {yearsChange < 0 && (
-            <li>⚠️ {Math.abs(yearsChange)} fewer {Math.abs(yearsChange) === 1 ? 'year' : 'years'} to reach your goal</li>
-          )}
-          {swrImproved && (
-            <li>✅ Higher safe withdrawal rate means lower corpus requirement</li>
-          )}
-          {corpusImproved && (
-            <li>✅ Lower required corpus is easier to achieve</li>
-          )}
-          {!corpusImproved && corpusChange > 0 && (
-            <li>⚠️ Higher required corpus needs more aggressive savings or longer timeline</li>
-          )}
-        </ul>
-      </div>
+      {/* Summary - Only show if meaningful changes */}
+      {(Math.abs(yearsChange) > 0 || Math.abs(corpusChange) > 100000 || Math.abs(swrChange) > 0.1) && (
+        <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-950/20">
+          <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+            💡 Summary
+          </p>
+          <ul className="mt-2 space-y-1 text-xs text-blue-800 dark:text-blue-200">
+            {yearsChange > 0 && (
+              <li>✅ {yearsChange} more {yearsChange === 1 ? 'year' : 'years'} to save and grow your wealth</li>
+            )}
+            {yearsChange < 0 && (
+              <li>⚠️ {Math.abs(yearsChange)} fewer {Math.abs(yearsChange) === 1 ? 'year' : 'years'} to reach your goal</li>
+            )}
+            {swrImproved && Math.abs(swrChange) > 0.1 && (
+              <li>✅ Higher safe withdrawal rate (+{swrChange.toFixed(1)}%) means lower corpus requirement</li>
+            )}
+            {corpusImproved && Math.abs(corpusChange) > 100000 && (
+              <li>✅ Required corpus reduced by {formatCurrency(Math.abs(corpusChange))} - easier to achieve</li>
+            )}
+            {!corpusImproved && corpusChange > 100000 && (
+              <li>⚠️ Higher corpus needs {formatCurrency(Math.abs(corpusChange))} more - requires aggressive savings or longer timeline</li>
+            )}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
