@@ -122,7 +122,8 @@ export function createDateFromYearMonth(year: number, month: number): Date {
   // Use 1st of month as default day (conservative approach)
   // This ensures calculated age is never older than actual age
   // Age calculation will be accurate or slightly younger by up to 30 days
-  return new Date(year, month - 1, 1);
+  // Use Date.UTC to avoid timezone conversion issues when saving to database
+  return new Date(Date.UTC(year, month - 1, 1));
 }
 
 /**
