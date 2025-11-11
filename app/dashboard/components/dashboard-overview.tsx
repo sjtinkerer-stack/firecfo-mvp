@@ -13,6 +13,7 @@ import { NetWorthChart } from './networth-chart';
 import { AssetAllocationChart } from './asset-allocation-chart';
 import { EditIncomeExpensesModal } from './edit-income-expenses-modal';
 import { EditAssetsModal } from './edit-assets-modal';
+import { FirePlanSection } from './fire-plan-section';
 import {
   generateNetWorthChartData,
   generateAssetAllocationData,
@@ -90,7 +91,7 @@ export function DashboardOverview() {
           value={formatIndianCurrency(data.currentNetworth)}
           subtitle={formatFullIndianCurrency(data.currentNetworth)}
           icon={<Wallet className="h-6 w-6" />}
-          colorTheme="slate"
+          colorTheme="violet"
           onEdit={() => setIsAssetsModalOpen(true)}
         />
 
@@ -135,7 +136,7 @@ export function DashboardOverview() {
           value={formatIndianCurrency(householdIncome)}
           subtitle={formatFullIndianCurrency(householdIncome)}
           icon={<DollarSign className="h-6 w-6" />}
-          colorTheme="cyan"
+          colorTheme="emerald"
           onEdit={() => setIsIncomeExpensesModalOpen(true)}
         />
 
@@ -145,7 +146,7 @@ export function DashboardOverview() {
           value={formatIndianCurrency(data.monthlyExpenses)}
           subtitle={formatFullIndianCurrency(data.monthlyExpenses)}
           icon={<TrendingDown className="h-6 w-6" />}
-          colorTheme="sky"
+          colorTheme="orange"
           onEdit={() => setIsIncomeExpensesModalOpen(true)}
         />
 
@@ -155,7 +156,7 @@ export function DashboardOverview() {
           value={`${(data.savingsRate * 100).toFixed(1)}%`}
           subtitle={`${formatIndianCurrency(data.monthlySavings)}/month`}
           icon={<PiggyBank className="h-6 w-6" />}
-          colorTheme="violet"
+          colorTheme="emerald"
           badge={
             data.savingsRate >= 0.4 ? (
               <div className="flex items-center gap-1.5 text-sm font-medium text-emerald-600 dark:text-emerald-400">
@@ -186,41 +187,25 @@ export function DashboardOverview() {
         <AssetAllocationChart data={assetAllocationData} currentAge={data.age} />
       </div>
 
-      {/* Additional Info */}
-      <div className="rounded-lg border border-gray-200 bg-gray-50 p-6 dark:border-gray-800 dark:bg-gray-900">
-        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
-          Your FIRE Calculation Details
-        </h3>
-        <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Post-FIRE Monthly Expense</p>
-            <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {formatIndianCurrency(data.postFireMonthlyExpense)}
-            </p>
-            <p className="text-xs text-gray-500 dark:text-gray-500">
-              Includes {data.lifestyleInflationAdjustment.toFixed(1)}% lifestyle inflation
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Safe Withdrawal Rate</p>
-            <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {data.safeWithdrawalRate}%
-            </p>
-            <p className="text-xs text-gray-500 dark:text-gray-500">
-              Dynamic SWR based on FIRE age {data.fireAge}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Monthly Savings Needed</p>
-            <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {formatIndianCurrency(data.monthlySavingsNeeded)}
-            </p>
-            <p className="text-xs text-gray-500 dark:text-gray-500">
-              {data.isOnTrack ? 'Current savings sufficient' : 'Increase to stay on track'}
-            </p>
-          </div>
-        </div>
-      </div>
+      {/* FIRE Plan Section - Redesigned with focus on Required vs Projected */}
+      <FirePlanSection
+        requiredCorpus={data.requiredCorpus}
+        projectedCorpusAtFire={data.projectedCorpusAtFire}
+        currentNetworth={data.currentNetworth}
+        postFireMonthlyExpense={data.postFireMonthlyExpense}
+        currentMonthlyExpense={data.monthlyExpenses}
+        monthlySavings={data.monthlySavings}
+        monthlySavingsNeeded={data.monthlySavingsNeeded}
+        lifestyleInflationAdjustment={data.lifestyleInflationAdjustment}
+        safeWithdrawalRate={data.safeWithdrawalRate}
+        yearsToFire={data.yearsToFire}
+        fireAge={data.fireAge}
+        currentAge={data.age}
+        isOnTrack={data.isOnTrack}
+        dependents={data.dependents}
+        savingsRate={data.savingsRate}
+        fireLifestyleType={data.fireLifestyleType}
+      />
 
       {/* Edit Modals */}
       <EditIncomeExpensesModal
