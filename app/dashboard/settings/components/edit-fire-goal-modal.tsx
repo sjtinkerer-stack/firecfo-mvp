@@ -41,6 +41,7 @@ interface EditFireGoalModalProps {
     age: number;
     fireAge: number; // backwards compat (actually fire_target_age)
     fireTargetAge: number;
+    fireTargetDate: string; // ISO date string
     fireLifestyleType: 'lean' | 'standard' | 'fat';
     monthlyExpenses: number;
     dependents: number;
