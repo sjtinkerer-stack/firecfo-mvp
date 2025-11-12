@@ -20,7 +20,6 @@ import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   calculateLifestyleInflationAdjustment,
-  calculateSafeWithdrawalRate,
   calculateFireMetrics,
 } from '@/app/onboarding/utils/fire-calculations';
 import { ImpactPreview } from './impact-preview';
@@ -97,7 +96,6 @@ export function EditFireGoalModal({
       lifestyleType
     );
 
-    const newSWR = calculateSafeWithdrawalRate(fireTargetAge);
     const yearsToFire = fireTargetAge - currentData.age;
 
     const metrics = calculateFireMetrics(
@@ -111,7 +109,7 @@ export function EditFireGoalModal({
     );
 
     setPreviewMetrics({
-      safeWithdrawalRate: newSWR,
+      safeWithdrawalRate: metrics.safeWithdrawalRate, // Use duration-based SWR from metrics
       requiredCorpus: metrics.requiredCorpus,
       yearsToFire,
     });
@@ -260,7 +258,7 @@ export function EditFireGoalModal({
 
     // Check if calculations meaningfully changed
     const corpusChangeMeaningful = Math.abs(previewMetrics.requiredCorpus - currentData.currentRequiredCorpus) > 50000; // >₹50K
-    const swrChangeMeaningful = Math.abs(previewMetrics.safeWithdrawalRate - currentData.currentSWR) > 0.1; // >0.1%
+    const swrChangeMeaningful = Math.abs(previewMetrics.safeWithdrawalRate - currentData.currentSWR) > 0.001; // >10 bps in decimal
     const yearsChangeMeaningful = Math.abs(previewMetrics.yearsToFire - currentData.currentYearsToFire) > 0; // Any year change
 
     return corpusChangeMeaningful || swrChangeMeaningful || yearsChangeMeaningful;

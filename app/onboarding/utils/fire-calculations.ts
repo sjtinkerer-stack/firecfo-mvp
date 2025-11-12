@@ -98,21 +98,6 @@ export function getLIABreakdown(
 }
 
 /**
- * Calculate dynamic Safe Withdrawal Rate (SWR) based on FIRE age
- * Earlier retirement = lower SWR (more conservative)
- * Later retirement = higher SWR (shorter withdrawal period)
- */
-export function calculateSafeWithdrawalRate(fireAge: number): number {
-  if (fireAge < 45) {
-    return 3.5 // 3.5% for early retirement (longer withdrawal period)
-  } else if (fireAge <= 55) {
-    return 4.0 // 4.0% for standard retirement
-  } else {
-    return 4.5 // 4.5% for later retirement (shorter withdrawal period)
-  }
-}
-
-/**
  * Get multiplier from SWR (inverse of SWR percentage)
  * e.g., 4% SWR = 25x multiplier
  */
@@ -165,6 +150,21 @@ export interface FireMetrics {
   surplusDeficit: number
 }
 
+/**
+ * Calculate Safe Withdrawal Rate based on retirement duration
+ * Longer retirement = more conservative (lower) SWR needed
+ * Based on Trinity Study and sequence of returns risk
+ */
+function calculateSafeWithdrawalRateByDuration(retirementYears: number): number {
+  // Conservative life expectancy: 85 years
+  if (retirementYears >= 45) return 0.033; // 30.3x multiplier - very long retirement (40+ years)
+  if (retirementYears >= 40) return 0.035; // 28.6x multiplier - long retirement (35-40 years)
+  if (retirementYears >= 35) return 0.037; // 27x multiplier - medium-long (30-35 years)
+  if (retirementYears >= 30) return 0.040; // 25x multiplier - Trinity Study baseline (~30 years)
+  if (retirementYears >= 25) return 0.043; // 23.3x multiplier - shorter retirement
+  return 0.045; // 22.2x multiplier - short retirement (<25 years)
+}
+
 export function calculateFireMetrics(
   currentAge: number,
   fireAge: number,
@@ -178,9 +178,12 @@ export function calculateFireMetrics(
   const INFLATION_RATE = 0.06 // 6% annual inflation
   const PRE_RETURN_RATE = 0.12 // 12% pre-retirement returns
 
-  // Calculate dynamic Safe Withdrawal Rate based on FIRE age
-  const safeWithdrawalRate = calculateSafeWithdrawalRate(fireAge)
-  const corpusMultiplier = getCorpusMultiplier(safeWithdrawalRate)
+  // Calculate dynamic Safe Withdrawal Rate based on retirement duration
+  // Earlier retirement = longer duration = more conservative (lower) SWR needed
+  const LIFE_EXPECTANCY = 85; // Conservative estimate for planning
+  const retirementYears = LIFE_EXPECTANCY - fireAge;
+  const safeWithdrawalRate = calculateSafeWithdrawalRateByDuration(retirementYears);
+  const corpusMultiplier = 1 / safeWithdrawalRate;
 
   // 1. Basic calculations
   const yearsToFire = fireAge - currentAge

@@ -484,7 +484,7 @@ export function Step5FireGoal({ form, navigationDirection }: Step5FireGoalProps)
                   {formatIndianCurrency(Math.round(fireMetrics.inflationAdjustedAnnualExpense))}
                 </p>
                 <p className="text-gray-800 dark:text-gray-200">
-                  × {fireMetrics.corpusMultiplier.toFixed(1)} ({fireMetrics.safeWithdrawalRate}% SWR): {formatFireCurrency(fireMetrics.requiredCorpus)}
+                  × {fireMetrics.corpusMultiplier.toFixed(1)} ({(fireMetrics.safeWithdrawalRate * 100).toFixed(1)}% SWR): {formatFireCurrency(fireMetrics.requiredCorpus)}
                 </p>
                 <p className="text-xs mt-1 italic text-gray-700 dark:text-gray-300">
                   {fireAge < 45 && '• Conservative 3.5% SWR for early retirement (longer withdrawal period)'}

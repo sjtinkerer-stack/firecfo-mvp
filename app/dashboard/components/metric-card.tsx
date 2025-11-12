@@ -103,73 +103,73 @@ export function MetricCard({
         className
       )}
     >
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          {/* Title with Edit Button */}
-          <div className="flex items-center justify-between">
-            <p className={cn('text-sm font-medium', theme.text, 'opacity-70')}>{title}</p>
-            {onEdit && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onEdit}
-                className={cn(
-                  'h-7 w-7 p-0 opacity-60 hover:opacity-100',
-                  theme.accent
-                )}
-                title={`Edit ${title}`}
-              >
-                <Pencil className="h-3.5 w-3.5" />
-              </Button>
-            )}
-          </div>
-
-          {/* Value */}
-          <p className={cn('mt-2 text-3xl font-bold', theme.text)}>{value}</p>
-
-          {/* Subtitle */}
-          {subtitle && <p className={cn('mt-1 text-xs', theme.text, 'opacity-50')}>{subtitle}</p>}
-
-          {/* Semantic Badge (status, comparison, etc.) */}
-          {badge && <div className="mt-2">{badge}</div>}
-
-          {/* Trend indicator */}
-          {trend && (
-            <div className="mt-3 flex items-center gap-1.5">
-              {trend.isPositive ? (
-                <ArrowUpIcon className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-              ) : (
-                <ArrowDownIcon className="h-4 w-4 text-red-600 dark:text-red-400" />
+      {/* Header with Icon Left, Title Center, Edit Right */}
+      <div className="flex items-center justify-between mb-4">
+        {/* Icon + Title on Left */}
+        <div className="flex items-center gap-3">
+          {icon && (
+            <div
+              className={cn(
+                'flex h-12 w-12 items-center justify-center rounded-lg',
+                theme.iconBg,
+                theme.accent
               )}
-              <span
-                className={cn(
-                  'text-sm font-medium',
-                  trend.isPositive
-                    ? 'text-emerald-600 dark:text-emerald-400'
-                    : 'text-red-600 dark:text-red-400'
-                )}
-              >
-                {trend.value > 0 ? '+' : ''}
-                {trend.value}%
-              </span>
-              <span className={cn('text-xs', theme.text, 'opacity-50')}>{trend.label}</span>
+            >
+              {icon}
             </div>
           )}
+          <p className={cn('text-sm font-medium', theme.text, 'opacity-70')}>{title}</p>
         </div>
 
-        {/* Icon */}
-        {icon && (
-          <div
+        {/* Edit Button on Right */}
+        {onEdit && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onEdit}
             className={cn(
-              'flex h-12 w-12 items-center justify-center rounded-lg',
-              theme.iconBg,
+              'h-8 px-3 hover:opacity-80',
               theme.accent
             )}
+            title={`Edit ${title}`}
           >
-            {icon}
-          </div>
+            <Pencil className="h-4 w-4 mr-1" />
+            Edit
+          </Button>
         )}
       </div>
+
+      {/* Value */}
+      <p className={cn('text-3xl font-bold', theme.text)}>{value}</p>
+
+      {/* Subtitle */}
+      {subtitle && <p className={cn('mt-1 text-xs', theme.text, 'opacity-50')}>{subtitle}</p>}
+
+      {/* Semantic Badge (status, comparison, etc.) */}
+      {badge && <div className="mt-2">{badge}</div>}
+
+      {/* Trend indicator */}
+      {trend && (
+        <div className="mt-3 flex items-center gap-1.5">
+          {trend.isPositive ? (
+            <ArrowUpIcon className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+          ) : (
+            <ArrowDownIcon className="h-4 w-4 text-red-600 dark:text-red-400" />
+          )}
+          <span
+            className={cn(
+              'text-sm font-medium',
+              trend.isPositive
+                ? 'text-emerald-600 dark:text-emerald-400'
+                : 'text-red-600 dark:text-red-400'
+            )}
+          >
+            {trend.value > 0 ? '+' : ''}
+            {trend.value}%
+          </span>
+          <span className={cn('text-xs', theme.text, 'opacity-50')}>{trend.label}</span>
+        </div>
+      )}
     </motion.div>
   );
 }

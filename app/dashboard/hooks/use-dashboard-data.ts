@@ -8,7 +8,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { DashboardData } from '../types';
-import { calculateAge, calculateYearsToFire } from '@/app/utils/date-helpers';
+import { calculateAge, calculateYearsToFire, calculateFireCountdown } from '@/app/utils/date-helpers';
 
 export function useDashboardData() {
   const [data, setData] = useState<DashboardData | null>(null);
@@ -52,8 +52,13 @@ export function useDashboardData() {
       // Compute age from date_of_birth
       const age = profile.date_of_birth ? calculateAge(profile.date_of_birth) : 0;
 
-      // Compute years to FIRE from fire_target_date
-      const yearsToFire = profile.fire_target_date ? calculateYearsToFire(profile.fire_target_date) : 0;
+      // Compute detailed countdown to FIRE from fire_target_date
+      const fireCountdown = profile.fire_target_date
+        ? calculateFireCountdown(profile.fire_target_date)
+        : { years: 0, months: 0, days: 0, totalDays: 0 };
+
+      // Compute years to FIRE as decimal for backwards compatibility
+      const yearsToFire = fireCountdown.years + (fireCountdown.months / 12);
 
       // fireAge is the user's preferred target age (stored), for backwards compatibility
       const fireAge = profile.fire_target_age || 0;
@@ -76,15 +81,17 @@ export function useDashboardData() {
         fireAge, // For backwards compatibility
         fireLifestyleType: profile.fire_lifestyle_type || 'standard',
         yearsToFire,
+        fireCountdown,
 
         // Income & expenses
         monthlyIncome: profile.monthly_income || 0,
         spouseIncome: profile.spouse_income || 0,
         monthlyExpenses: profile.monthly_expenses || 0,
         monthlySavings: (profile.monthly_income || 0) + (profile.spouse_income || 0) - (profile.monthly_expenses || 0),
+        // Calculate savings rate as percentage (0-100, matching onboarding calculation)
         savingsRate:
-          ((profile.monthly_income || 0) + (profile.spouse_income || 0) - (profile.monthly_expenses || 0)) /
-          ((profile.monthly_income || 0) + (profile.spouse_income || 0) || 1),
+          (((profile.monthly_income || 0) + (profile.spouse_income || 0) - (profile.monthly_expenses || 0)) /
+          ((profile.monthly_income || 0) + (profile.spouse_income || 0) || 1)) * 100,
 
         // Net worth breakdown
         currentNetworth:
@@ -108,7 +115,7 @@ export function useDashboardData() {
 
         // Calculation metadata
         lifestyleInflationAdjustment: profile.lifestyle_inflation_adjustment || 0,
-        safeWithdrawalRate: profile.safe_withdrawal_rate || 4.0,
+        safeWithdrawalRate: profile.safe_withdrawal_rate || 0.04,
 
         // Timestamps
         createdAt: profile.created_at,

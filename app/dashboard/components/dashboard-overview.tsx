@@ -7,25 +7,20 @@
 
 import { useState } from 'react';
 import { useDashboardData } from '../hooks/use-dashboard-data';
-import { FireStatusBanner } from './fire-status-banner';
 import { MetricCard } from './metric-card';
 import { NetWorthChart } from './networth-chart';
-import { AssetAllocationChart } from './asset-allocation-chart';
 import { EditIncomeExpensesModal } from './edit-income-expenses-modal';
 import { EditAssetsModal } from './edit-assets-modal';
-import { FirePlanSection } from './fire-plan-section';
+import { FireGapAnalysisCard } from './fire-gap-analysis-card';
+import { IntegratedNetworthCard } from './integrated-networth-card';
 import {
   generateNetWorthChartData,
-  generateAssetAllocationData,
   formatIndianCurrency,
   formatFullIndianCurrency,
 } from '../utils/dashboard-calculations';
 import {
-  TrendingUp,
-  Wallet,
-  Target,
   PiggyBank,
-  DollarSign,
+  IndianRupee,
   TrendingDown,
   Loader2,
   AlertCircle,
@@ -65,77 +60,63 @@ export function DashboardOverview() {
 
   // Generate chart data
   const networthChartData = generateNetWorthChartData(data);
-  const assetAllocationData = generateAssetAllocationData(data);
 
   // Calculate household income
   const householdIncome = data.monthlyIncome + data.spouseIncome;
 
   return (
     <div className="space-y-8">
-      {/* FIRE Status Banner */}
-      <FireStatusBanner
+      {/* Row 1: FIRE Gap Analysis (Full Width) */}
+      <FireGapAnalysisCard
+        requiredCorpus={data.requiredCorpus}
+        projectedCorpusAtFire={data.projectedCorpusAtFire}
         isOnTrack={data.isOnTrack}
-        fireAge={data.fireAge}
-        fireTargetDate={data.fireTargetDate}
-        fireLifestyleType={data.fireLifestyleType}
-        yearsToFire={data.yearsToFire}
+        monthlySavings={data.monthlySavings}
         monthlySavingsNeeded={data.monthlySavingsNeeded}
-        currentMonthlySavings={data.monthlySavings}
+        postFireMonthlyExpense={data.postFireMonthlyExpense}
+        currentMonthlyExpense={data.monthlyExpenses}
+        lifestyleInflationAdjustment={data.lifestyleInflationAdjustment}
+        yearsToFire={data.yearsToFire}
+        safeWithdrawalRate={data.safeWithdrawalRate}
+        fireAge={data.fireAge}
+        currentAge={data.age}
+        dependents={data.dependents}
+        savingsRate={data.savingsRate}
+        fireLifestyleType={data.fireLifestyleType}
+        fireTargetDate={data.fireTargetDate}
+        fireCountdown={data.fireCountdown}
+        currentNetworth={data.currentNetworth}
       />
 
-      {/* Key Metrics Grid - 3 columns on desktop */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {/* Current Net Worth */}
-        <MetricCard
-          title="Current Net Worth"
-          value={formatIndianCurrency(data.currentNetworth)}
-          subtitle={formatFullIndianCurrency(data.currentNetworth)}
-          icon={<Wallet className="h-6 w-6" />}
-          colorTheme="violet"
+      {/* Row 2: Wealth Tracking (2 columns) */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Integrated Net Worth Card */}
+        <IntegratedNetworthCard
+          currentNetworth={data.currentNetworth}
+          assets={{
+            equity: data.equity,
+            debt: data.debt,
+            cash: data.cash,
+            realEstate: data.realEstate,
+            otherAssets: data.otherAssets,
+          }}
+          currentAge={data.age}
           onEdit={() => setIsAssetsModalOpen(true)}
         />
 
-        {/* Required FIRE Corpus */}
-        <MetricCard
-          title="Required FIRE Corpus"
-          value={formatIndianCurrency(data.requiredCorpus)}
-          subtitle={`At ${data.safeWithdrawalRate}% SWR`}
-          icon={<Target className="h-6 w-6" />}
-          colorTheme="indigo"
-        />
+        {/* Net Worth Growth Chart */}
+        <NetWorthChart data={networthChartData} />
+      </div>
 
-        {/* Projected Corpus */}
-        <MetricCard
-          title="Projected Corpus at FIRE"
-          value={formatIndianCurrency(data.projectedCorpusAtFire)}
-          subtitle={`By age ${data.fireAge} with 12% returns`}
-          icon={<TrendingUp className="h-6 w-6" />}
-          colorTheme="blue"
-          badge={
-            data.projectedCorpusAtFire >= data.requiredCorpus ? (
-              <div className="flex items-center gap-1.5 text-sm font-medium text-emerald-600 dark:text-emerald-400">
-                <span>✓</span>
-                <span>
-                  Surplus: {formatIndianCurrency(data.projectedCorpusAtFire - data.requiredCorpus)}
-                </span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1.5 text-sm font-medium text-orange-600 dark:text-orange-400">
-                <span>⚠️</span>
-                <span>
-                  Shortfall: {formatIndianCurrency(data.requiredCorpus - data.projectedCorpusAtFire)}
-                </span>
-              </div>
-            )
-          }
-        />
+      {/* Row 3: Cash Flow (3 columns) */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
 
         {/* Monthly Income */}
         <MetricCard
           title="Monthly Household Income"
           value={formatIndianCurrency(householdIncome)}
           subtitle={formatFullIndianCurrency(householdIncome)}
-          icon={<DollarSign className="h-6 w-6" />}
+          icon={<IndianRupee className="h-6 w-6" />}
           colorTheme="emerald"
           onEdit={() => setIsIncomeExpensesModalOpen(true)}
         />
@@ -153,17 +134,17 @@ export function DashboardOverview() {
         {/* Savings Rate */}
         <MetricCard
           title="Savings Rate"
-          value={`${(data.savingsRate * 100).toFixed(1)}%`}
+          value={`${data.savingsRate.toFixed(1)}%`}
           subtitle={`${formatIndianCurrency(data.monthlySavings)}/month`}
           icon={<PiggyBank className="h-6 w-6" />}
           colorTheme="emerald"
           badge={
-            data.savingsRate >= 0.4 ? (
+            data.savingsRate >= 40 ? (
               <div className="flex items-center gap-1.5 text-sm font-medium text-emerald-600 dark:text-emerald-400">
                 <span>🚀</span>
                 <span>Excellent - Fast track to FIRE</span>
               </div>
-            ) : data.savingsRate >= 0.2 ? (
+            ) : data.savingsRate >= 20 ? (
               <div className="flex items-center gap-1.5 text-sm font-medium text-blue-600 dark:text-blue-400">
                 <span>✓</span>
                 <span>Good progress</span>
@@ -177,35 +158,6 @@ export function DashboardOverview() {
           }
         />
       </div>
-
-      {/* Charts Grid - 2 columns on desktop */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Net Worth Growth Chart */}
-        <NetWorthChart data={networthChartData} />
-
-        {/* Asset Allocation Chart */}
-        <AssetAllocationChart data={assetAllocationData} currentAge={data.age} />
-      </div>
-
-      {/* FIRE Plan Section - Redesigned with focus on Required vs Projected */}
-      <FirePlanSection
-        requiredCorpus={data.requiredCorpus}
-        projectedCorpusAtFire={data.projectedCorpusAtFire}
-        currentNetworth={data.currentNetworth}
-        postFireMonthlyExpense={data.postFireMonthlyExpense}
-        currentMonthlyExpense={data.monthlyExpenses}
-        monthlySavings={data.monthlySavings}
-        monthlySavingsNeeded={data.monthlySavingsNeeded}
-        lifestyleInflationAdjustment={data.lifestyleInflationAdjustment}
-        safeWithdrawalRate={data.safeWithdrawalRate}
-        yearsToFire={data.yearsToFire}
-        fireAge={data.fireAge}
-        currentAge={data.age}
-        isOnTrack={data.isOnTrack}
-        dependents={data.dependents}
-        savingsRate={data.savingsRate}
-        fireLifestyleType={data.fireLifestyleType}
-      />
 
       {/* Edit Modals */}
       <EditIncomeExpensesModal

@@ -15,8 +15,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
-  ReferenceLine,
 } from 'recharts';
 import { TrendingUp } from 'lucide-react';
 import { NetWorthChartDataPoint } from '../types';
@@ -95,7 +93,7 @@ export function NetWorthChart({ data }: NetWorthChartProps) {
       </div>
 
       {/* Chart */}
-      <div className="h-80">
+      <div className="h-[340px]">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={data}
@@ -103,7 +101,7 @@ export function NetWorthChart({ data }: NetWorthChartProps) {
               top: 10,
               right: 30,
               left: 0,
-              bottom: 0,
+              bottom: 5,
             }}
           >
             <defs>
@@ -130,11 +128,6 @@ export function NetWorthChart({ data }: NetWorthChartProps) {
               tickFormatter={formatYAxis}
             />
             <Tooltip content={<CustomTooltip />} />
-            <Legend
-              wrapperStyle={{ fontSize: 14 }}
-              iconType="circle"
-              formatter={(value) => <span className="text-gray-700 dark:text-gray-300">{value}</span>}
-            />
 
             {/* Projected Corpus Area */}
             <Area

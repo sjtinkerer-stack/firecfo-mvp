@@ -250,7 +250,7 @@ export function RequiredCorpusBreakdown({
                 <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
                   <div className="flex justify-between">
                     <span>Safe Withdrawal Rate:</span>
-                    <span className="font-medium">{safeWithdrawalRate}%</span>
+                    <span className="font-medium">{(safeWithdrawalRate * 100).toFixed(1)}%</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Corpus multiplier:</span>

@@ -48,14 +48,9 @@ export function FirePlanSection({
   const absoluteGap = Math.abs(gapAtFireAge);
   const savingsIncrease = monthlySavingsNeeded - monthlySavings;
 
-  // Get corpus multiplier based on FIRE age
-  const getCorpusMultiplier = () => {
-    if (fireAge < 45) return 28.6;
-    if (fireAge <= 55) return 25;
-    return 22.2;
-  };
-
-  const corpusMultiplier = getCorpusMultiplier();
+  // Calculate corpus multiplier from actual SWR (inverse relationship)
+  // Example: 3.3% SWR (0.033) → 1 / 0.033 = 30.3x multiplier
+  const corpusMultiplier = 1 / safeWithdrawalRate;
 
   // Status colors only (for bottom status box)
   const statusColors = isOnTrack

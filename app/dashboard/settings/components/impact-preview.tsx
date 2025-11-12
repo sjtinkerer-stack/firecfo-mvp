@@ -103,11 +103,11 @@ export function ImpactPreview({ before, after }: ImpactPreviewProps) {
           </p>
           <div className="flex items-center justify-between">
             <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {before.safeWithdrawalRate}%
+              {(before.safeWithdrawalRate * 100).toFixed(1)}%
             </span>
             <ArrowRight className="h-4 w-4 text-gray-400" />
             <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {after.safeWithdrawalRate}%
+              {(after.safeWithdrawalRate * 100).toFixed(1)}%
             </span>
           </div>
           {swrChange !== 0 && (
@@ -115,8 +115,8 @@ export function ImpactPreview({ before, after }: ImpactPreviewProps) {
               {getChangeIcon(swrChange, true)}
               <span>
                 {swrChange > 0 ? '+' : ''}
-                {swrChange.toFixed(1)}%
-                {swrImproved ? ' (better - can withdraw more annually)' : ' (lower withdrawal rate)'}
+                {(swrChange * 100 * 100).toFixed(0)} bps
+                {swrImproved ? ' (higher SWR - lower corpus needed)' : ' (lower SWR - higher corpus needed)'}
               </span>
             </div>
           )}
@@ -162,8 +162,8 @@ export function ImpactPreview({ before, after }: ImpactPreviewProps) {
             {yearsChange < 0 && (
               <li>⚠️ {Math.abs(yearsChange)} fewer {Math.abs(yearsChange) === 1 ? 'year' : 'years'} to reach your goal</li>
             )}
-            {swrImproved && Math.abs(swrChange) > 0.1 && (
-              <li>✅ Higher safe withdrawal rate (+{swrChange.toFixed(1)}%) means lower corpus requirement</li>
+            {swrImproved && Math.abs(swrChange) > 0.001 && (
+              <li>✅ Higher safe withdrawal rate (+{(swrChange * 100 * 100).toFixed(0)} bps) means lower corpus requirement</li>
             )}
             {corpusImproved && Math.abs(corpusChange) > 100000 && (
               <li>✅ Required corpus reduced by {formatCurrency(Math.abs(corpusChange))} - easier to achieve</li>

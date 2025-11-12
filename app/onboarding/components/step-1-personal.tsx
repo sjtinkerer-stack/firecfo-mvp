@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { UseFormReturn } from 'react-hook-form'
+import { motion } from 'framer-motion'
 import { User, MapPin, Users, Heart, Calendar } from 'lucide-react'
 import { ConversationStep } from './conversation-step'
 import { PillSelector } from './pill-selector'
@@ -134,73 +135,86 @@ export function Step1Personal({ form, navigationDirection }: Step1PersonalProps)
         error={errors.birth_year?.message || errors.birth_month?.message}
         scrollOnMount={!hasPreFilledData}
       >
-        <div className="space-y-6 max-w-md mx-auto">
-          <div className="grid grid-cols-2 gap-4">
-            {/* Birth Year Dropdown */}
-            <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
-                Birth Year
-              </label>
-              <Select
-                value={birthYear?.toString()}
-                onValueChange={(value) => {
-                  form.setValue('birth_year', parseInt(value), { shouldValidate: true })
-                  // Set default birth month if not already set
-                  if (!birthMonth) {
-                    form.setValue('birth_month', 7, { shouldValidate: true }) // Default to July
-                  }
-                }}
-              >
-                <SelectTrigger className="h-12 text-lg">
-                  <SelectValue placeholder="Select year" />
-                </SelectTrigger>
-                <SelectContent className="max-h-[250px]">
-                  {Array.from({ length: 48 }, (_, i) => {
-                    const year = new Date().getFullYear() - 18 - i // Ages 18-65
-                    return (
-                      <SelectItem key={year} value={year.toString()}>
-                        {year}
-                      </SelectItem>
-                    )
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
+        <div className="space-y-5 max-w-lg mx-auto">
+          {/* Date Input Card */}
+          <div className="bg-white/50 dark:bg-gray-800/30 rounded-xl p-5 border border-gray-200 dark:border-gray-700">
+            <div className="grid grid-cols-2 gap-3">
+              {/* Birth Year Dropdown */}
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                  <span>Birth Year</span>
+                </label>
+                <Select
+                  value={birthYear?.toString()}
+                  onValueChange={(value) => {
+                    form.setValue('birth_year', parseInt(value), { shouldValidate: true })
+                    // Set default birth month if not already set
+                    if (!birthMonth) {
+                      form.setValue('birth_month', 7, { shouldValidate: true }) // Default to July
+                    }
+                  }}
+                >
+                  <SelectTrigger className="h-12 text-lg bg-white dark:bg-gray-900">
+                    <SelectValue placeholder="Select year" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[250px]">
+                    {Array.from({ length: 48 }, (_, i) => {
+                      const year = new Date().getFullYear() - 18 - i // Ages 18-65
+                      return (
+                        <SelectItem key={year} value={year.toString()}>
+                          {year}
+                        </SelectItem>
+                      )
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            {/* Birth Month Dropdown */}
-            <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
-                Birth Month
-              </label>
-              <Select
-                value={birthMonth?.toString()}
-                onValueChange={(value) => {
-                  form.setValue('birth_month', parseInt(value), { shouldValidate: true })
-                }}
-                disabled={!birthYear}
-              >
-                <SelectTrigger className="h-12 text-lg">
-                  <SelectValue placeholder="Month" />
-                </SelectTrigger>
-                <SelectContent>
-                  {MONTHS.map((month) => (
-                    <SelectItem key={month.value} value={month.value.toString()}>
-                      {month.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {/* Birth Month Dropdown */}
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                  <span>Birth Month</span>
+                </label>
+                <Select
+                  value={birthMonth?.toString()}
+                  onValueChange={(value) => {
+                    form.setValue('birth_month', parseInt(value), { shouldValidate: true })
+                  }}
+                  disabled={!birthYear}
+                >
+                  <SelectTrigger className="h-12 text-lg bg-white dark:bg-gray-900">
+                    <SelectValue placeholder="Month" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MONTHS.map((month) => (
+                      <SelectItem key={month.value} value={month.value.toString()}>
+                        {month.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
-          {/* Display calculated age */}
+          {/* Calculated Age Display */}
           {age && (
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground">Your age</p>
-              <p className="text-4xl font-bold text-gray-900 dark:text-gray-100 mt-1">
-                {age} years
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3 }}
+              className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-900/20 dark:to-emerald-900/10 rounded-xl p-6 border border-emerald-200 dark:border-emerald-800/30 text-center"
+            >
+              <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 mb-2">
+                Your Current Age
               </p>
-            </div>
+              <p className="text-5xl font-bold text-emerald-900 dark:text-emerald-100">
+                {age}
+                <span className="text-2xl font-medium text-emerald-600 dark:text-emerald-400 ml-2">
+                  years
+                </span>
+              </p>
+            </motion.div>
           )}
         </div>
         {age && age >= 18 && (

@@ -18,7 +18,6 @@ import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   calculateLifestyleInflationAdjustment,
-  calculateSafeWithdrawalRate,
   calculateFireMetrics,
 } from '@/app/onboarding/utils/fire-calculations';
 

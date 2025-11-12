@@ -20,6 +20,12 @@ export interface DashboardData {
   fireAge: number; // Computed current FIRE age (for backwards compatibility)
   fireLifestyleType: 'lean' | 'standard' | 'fat';
   yearsToFire: number; // Computed from fireTargetDate
+  fireCountdown: {
+    years: number;
+    months: number;
+    days: number;
+    totalDays: number;
+  };
 
   // Income & expenses
   monthlyIncome: number;

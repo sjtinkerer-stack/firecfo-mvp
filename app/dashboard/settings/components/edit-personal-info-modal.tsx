@@ -26,7 +26,6 @@ import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   calculateLifestyleInflationAdjustment,
-  calculateSafeWithdrawalRate,
   calculateFireMetrics,
 } from '@/app/onboarding/utils/fire-calculations';
 import { INDIAN_CITIES, MONTHS } from '@/app/onboarding/types';
@@ -146,7 +145,6 @@ export function EditPersonalInfoModal({
       currentData.fireLifestyleType
     );
 
-    const newSWR = calculateSafeWithdrawalRate(currentData.fireTargetAge);
     const yearsToFire = currentData.fireTargetAge - age;
 
     const metrics = calculateFireMetrics(
@@ -160,7 +158,7 @@ export function EditPersonalInfoModal({
     );
 
     setPreviewMetrics({
-      safeWithdrawalRate: newSWR,
+      safeWithdrawalRate: metrics.safeWithdrawalRate, // Use duration-based SWR from metrics
       requiredCorpus: metrics.requiredCorpus,
       yearsToFire,
     });
@@ -329,7 +327,7 @@ export function EditPersonalInfoModal({
 
     // Check if calculations meaningfully changed
     const corpusChangeMeaningful = Math.abs(previewMetrics.requiredCorpus - currentData.currentRequiredCorpus) > 50000; // >₹50K
-    const swrChangeMeaningful = Math.abs(previewMetrics.safeWithdrawalRate - currentData.currentSWR) > 0.1; // >0.1%
+    const swrChangeMeaningful = Math.abs(previewMetrics.safeWithdrawalRate - currentData.currentSWR) > 0.001; // >10 bps in decimal
 
     return corpusChangeMeaningful || swrChangeMeaningful;
   })();
