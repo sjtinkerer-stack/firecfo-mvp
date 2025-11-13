@@ -36,13 +36,16 @@ export function ProjectedCorpusBreakdown({
   const futureValueOfSavings =
     monthlySavings * ((Math.pow(1 + monthlyRate, totalMonths) - 1) / monthlyRate);
 
+  // Calculate actual total (A + B, not using prop to ensure math accuracy)
+  const calculatedTotal = futureValueOfAssets + futureValueOfSavings;
+
   return (
     <div className="space-y-2">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
       >
-        <span>How we got to {formatFireCurrency(projectedCorpusAtFire)}</span>
+        <span>How we got to {formatFireCurrency(calculatedTotal)}</span>
         {isExpanded ? (
           <ChevronUp className="w-4 h-4" />
         ) : (
@@ -190,11 +193,11 @@ export function ProjectedCorpusBreakdown({
                     Total at Age {fireAge}
                   </h4>
                   <span className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                    {formatFireCurrency(projectedCorpusAtFire)}
+                    {formatFireCurrency(calculatedTotal)}
                   </span>
                 </div>
                 <div className="ml-9 mt-2 text-xs text-gray-600 dark:text-gray-400 italic">
-                  {formatFireCurrency(futureValueOfAssets)} (assets) + {formatFireCurrency(futureValueOfSavings)} (savings) = {formatFireCurrency(projectedCorpusAtFire)}
+                  {formatFireCurrency(futureValueOfAssets)} (assets) + {formatFireCurrency(futureValueOfSavings)} (savings) = {formatFireCurrency(calculatedTotal)}
                 </div>
               </div>
 
@@ -208,7 +211,7 @@ export function ProjectedCorpusBreakdown({
                       <div>2. <strong>Regular savings</strong> accumulate to {formatFireCurrency(futureValueOfSavings)}</div>
                     </div>
                     <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-                      By age {fireAge}, you'll have <strong>{formatFireCurrency(projectedCorpusAtFire)}</strong> assuming current savings continue.
+                      By age {fireAge}, you'll have <strong>{formatFireCurrency(calculatedTotal)}</strong> assuming current savings continue.
                     </div>
                   </div>
                 </div>

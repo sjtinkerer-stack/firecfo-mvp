@@ -34,6 +34,7 @@ import {
   calculateAge,
   createDateFromYearMonth,
   calculateFireTargetDate,
+  calculateYearsToFire,
 } from '@/app/utils/date-helpers'
 
 const TOTAL_STEPS = 5
@@ -109,6 +110,20 @@ export function OnboardingWizard() {
       return {}
     }
 
+    // NEW: Calculate precise years to FIRE from dates (decimal for accuracy)
+    const dateOfBirth = birth_year && birth_month
+      ? createDateFromYearMonth(birth_year, birth_month)
+      : null;
+
+    const fireTargetDate = dateOfBirth && fire_target_age
+      ? calculateFireTargetDate(dateOfBirth, fire_target_age)
+      : null;
+
+    // Use decimal years for precise inflation calculations
+    const yearsToFire = fireTargetDate && dateOfBirth
+      ? calculateYearsToFire(fireTargetDate) // Returns decimal (e.g., 14.25)
+      : fire_age - age; // Fallback to integer if dates not available
+
     const householdIncome = (monthly_income || 0) + (spouse_income || 0)
     const monthlySavings = householdIncome - (monthly_expenses || 0)
     const savingsRate = householdIncome > 0 ? (monthlySavings / householdIncome) * 100 : 0
@@ -122,10 +137,11 @@ export function OnboardingWizard() {
       fire_lifestyle_type as 'lean' | 'standard' | 'fat'
     )
 
-    // Calculate all FIRE metrics
+    // Calculate all FIRE metrics (now with decimal yearsToFire for precision)
     const metrics = calculateFireMetrics(
       age,
       fire_age,
+      yearsToFire, // NEW PARAMETER: Decimal years for accurate inflation calculation
       monthly_expenses,
       currentNetWorth,
       monthlySavings,
@@ -145,6 +161,9 @@ export function OnboardingWizard() {
   }, [
     age,
     fire_age,
+    fire_target_age, // NEW DEPENDENCY: Needed for fireTargetDate calculation
+    birth_year, // NEW DEPENDENCY: Needed for decimal yearsToFire calculation
+    birth_month, // NEW DEPENDENCY: Needed for decimal yearsToFire calculation
     fire_lifestyle_type,
     monthly_expenses,
     monthly_income,

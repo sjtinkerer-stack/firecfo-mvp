@@ -124,6 +124,43 @@ export function useDashboardData() {
       };
 
       setData(dashboardData);
+
+      // Development-only validation: Check calculation consistency
+      if (process.env.NODE_ENV === 'development' && dashboardData.requiredCorpus > 0) {
+        const calculatedMultiplier = 1 / dashboardData.safeWithdrawalRate;
+        const postFireAnnualExpense = dashboardData.postFireMonthlyExpense * 12;
+        const inflationMultiplier = Math.pow(1.06, dashboardData.yearsToFire);
+        const inflationAdjustedAnnualExpense = postFireAnnualExpense * inflationMultiplier;
+        const expectedCorpus = inflationAdjustedAnnualExpense * calculatedMultiplier;
+
+        const difference = Math.abs(expectedCorpus - dashboardData.requiredCorpus);
+        const percentDiff = (difference / dashboardData.requiredCorpus) * 100;
+
+        if (percentDiff > 1) { // More than 1% difference
+          console.warn('⚠️ Required corpus calculation mismatch detected!', {
+            stored: dashboardData.requiredCorpus,
+            calculated: expectedCorpus,
+            difference: difference,
+            percentDiff: percentDiff.toFixed(2) + '%',
+            breakdown: {
+              postFireMonthlyExpense: dashboardData.postFireMonthlyExpense,
+              postFireAnnualExpense,
+              yearsToFire: dashboardData.yearsToFire,
+              inflationMultiplier: inflationMultiplier.toFixed(4),
+              inflationAdjustedAnnualExpense,
+              safeWithdrawalRate: dashboardData.safeWithdrawalRate,
+              corpusMultiplier: calculatedMultiplier.toFixed(2)
+            }
+          });
+        } else {
+          console.log('✅ Required corpus calculation validated:', {
+            stored: dashboardData.requiredCorpus,
+            calculated: expectedCorpus,
+            difference: difference,
+            match: 'OK'
+          });
+        }
+      }
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
       setError(err instanceof Error ? err.message : 'Failed to load dashboard data');

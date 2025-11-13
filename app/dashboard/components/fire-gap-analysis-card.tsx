@@ -70,14 +70,10 @@ export function FireGapAnalysisCard({
   // Format FIRE type label
   const fireTypeLabel = fireLifestyleType.charAt(0).toUpperCase() + fireLifestyleType.slice(1) + ' FIRE';
 
-  // Get corpus multiplier based on FIRE age
-  const getCorpusMultiplier = () => {
-    if (fireAge < 45) return 28.6;
-    if (fireAge <= 55) return 25;
-    return 22.2;
-  };
-
-  const corpusMultiplier = getCorpusMultiplier();
+  // Calculate corpus multiplier from stored SWR (duration-based, not age-based)
+  // The SWR is calculated using retirement duration (85 - fireAge) during onboarding
+  // and stored in the database. We use the inverse to get the multiplier.
+  const corpusMultiplier = 1 / safeWithdrawalRate;
 
   // Calculate early retirement age and safety buffer for surplus
   let yearsEarlier = 0;

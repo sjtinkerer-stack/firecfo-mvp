@@ -137,9 +137,19 @@ npm run lint
 - Fat FIRE: +10% (upgraded lifestyle)
 
 #### Dynamic Safe Withdrawal Rate (SWR)
-- **FIRE age <45:** 3.5% SWR (28.6x multiplier) - Conservative for longer withdrawal period (40-50 years)
-- **FIRE age 45-55:** 4.0% SWR (25x multiplier) - Standard Trinity Study rate (~30 years)
-- **FIRE age >55:** 4.5% SWR (22.2x multiplier) - Optimistic for shorter withdrawal period (20-30 years)
+**IMPORTANT:** SWR is calculated based on **retirement duration** (life expectancy - FIRE age), not just FIRE age.
+- Life expectancy assumed: 85 years (conservative)
+- Retirement duration formula: `85 - fireAge`
+
+**SWR by Retirement Duration:**
+- 45+ years: 3.3% SWR (30.3x multiplier) - Very long retirement
+- 40-45 years: 3.5% SWR (28.6x multiplier) - Long retirement
+- 35-40 years: 3.7% SWR (27x multiplier) - Medium-long retirement
+- 30-35 years: 4.0% SWR (25x multiplier) - Trinity Study baseline
+- 25-30 years: 4.3% SWR (23.3x multiplier) - Shorter retirement
+- <25 years: 4.5% SWR (22.2x multiplier) - Short retirement
+
+This ensures earlier FIRE ages get more conservative withdrawal rates due to longer retirement periods.
 
 #### Complete Calculation Flow
 1. **Post-FIRE Monthly Expense** = Current Monthly Expense × (1 + LIA/100)
@@ -616,13 +626,15 @@ app/
 ```
 
 ### Database Migrations
-```
-supabase-migration.sql                    # Base user_profiles table + triggers
-add-step4-asset-fields.sql                # Asset category columns
-add-step5-fire-goal-fields.sql            # FIRE goal + calculated metrics columns
-fix-rls-policies.sql                      # Row Level Security policies
-migrate-to-date-based-age.sql             # NEW: Date-based age system (replaces age/fire_age)
-```
+Applied in this order:
+1. `supabase-migration.sql` - Base user_profiles table + auto-update triggers
+2. `add-step4-asset-fields.sql` - Asset category columns (equity, debt, cash, real_estate, other_assets)
+3. `add-step5-fire-goal-fields.sql` - FIRE goal + calculated metrics columns (**UPDATED**: Changed safe_withdrawal_rate from NUMERIC(4,2) to NUMERIC(5,3))
+4. `fix-rls-policies.sql` - Row Level Security policies (SELECT, INSERT, UPDATE for authenticated users)
+5. `migrate-to-date-based-age.sql` - Date-based age system (replaces static age/fire_age with date_of_birth/fire_target_date)
+6. `fix-swr-decimal-format.sql` - Fixes corrupted SWR values stored as percentages (3.5 → 0.035)
+7. `fix-safe-withdrawal-rate-precision.sql` - **CRITICAL**: Fixes column precision from NUMERIC(4,2) to NUMERIC(5,3) to prevent rounding
+8. `debug-upsert-test.sql` - Debug/testing migration (development only)
 
 ---
 
@@ -638,25 +650,37 @@ migrate-to-date-based-age.sql             # NEW: Date-based age system (replaces
 
 **Route Structure:**
 ```
-/                    → Landing page (public)
-/login, /signup      → Auth pages (redirects if authenticated)
-/onboarding          → 5-step wizard (requires auth, redirects if completed)
-/dashboard           → Main app (requires auth + onboarding completed)
-/auth/callback       → Supabase OAuth callback handler
+/                       → Landing page (public)
+/login, /signup         → Auth pages (redirects if authenticated)
+/onboarding             → 5-step wizard (requires auth, redirects if completed)
+/dashboard              → Main dashboard (requires auth + onboarding completed)
+/dashboard/settings     → Settings page for profile/FIRE goal editing
+/auth/callback          → Supabase OAuth callback handler
 ```
+
+**Middleware Redirect Logic:**
+1. Unauthenticated user tries to access `/dashboard` or `/onboarding` → Redirect to `/login`
+2. Authenticated user visits `/login` or `/signup`:
+   - If `onboarding_completed = true` → Redirect to `/dashboard`
+   - If `onboarding_completed = false` → Redirect to `/onboarding?step=1`
+3. All other routes pass through without redirect
 
 ### Supabase Client Patterns
 **Browser Client (`lib/supabase.ts`):**
 - Singleton pattern using `createBrowserClient` from `@supabase/ssr`
+- Implemented with `getSupabaseBrowserClient()` function that creates client on first call
+- Exports singleton instance as `supabase` for easy importing
 - Used in client components for queries, mutations, auth state
 - Import: `import { supabase } from '@/lib/supabase'`
+- Also exports `getSupabaseBrowserClient()` for explicit usage
 
 **Server Client (Middleware):**
 - Created per-request with `createServerClient` from `@supabase/ssr`
 - Handles cookie-based session management for SSR
 - Critical for auth checks in middleware
+- Uses cookie handlers (`getAll()`, `setAll()`) for proper session persistence
 
-**Important**: Always use the browser client singleton in client components. Never create multiple instances.
+**Important**: Always use the browser client singleton in client components. Never create multiple instances or call `createBrowserClient()` directly.
 
 ### Auto-Save Pattern
 The onboarding wizard uses a debounced auto-save system:
@@ -676,14 +700,51 @@ All FIRE calculations are in `app/onboarding/utils/fire-calculations.ts`:
 - **Currency formatting**: Indian format helper (`formatFireCurrency`)
 - These calculations are performed client-side and saved to database
 
+## shadcn/ui Components
+
+The project uses shadcn/ui components (located in `components/ui/`). These are pre-built, customizable components built on Radix UI primitives.
+
+**Available Components:**
+- `button` - Button with multiple variants (default, destructive, outline, secondary, ghost, link)
+- `card` - Card container with Header, Title, Description, Content, Footer
+- `input` - Text input with label support
+- `label` - Form labels
+- `select` - Dropdown select with groups
+- `dialog` - Modal dialogs
+- `radio-group` - Radio button groups
+- `progress` - Progress bars
+- `slider` - Range sliders
+- `tooltip` - Hover tooltips
+- `form` - Form wrapper with react-hook-form integration
+- `sonner` - Toast notifications (via sonner library)
+- `password-input` - Password input with show/hide toggle
+- `password-strength` - Password strength indicator
+- `animated-background` - Landing page background animation
+- `landing-nav` - Landing page navigation
+
+**Component Pattern:**
+- Import from `@/components/ui/[component-name]`
+- Use `cn()` utility from `@/lib/utils` for conditional class merging
+- Components support dark mode via `dark:` variants
+- All components are styled with Tailwind CSS
+
+**Adding New shadcn Components:**
+```bash
+npx shadcn@latest add [component-name]
+```
+
 ## Coding Conventions
-- **File naming**: kebab-case (user-profile.tsx)
-- **Component naming**: PascalCase (UserProfile)
+- **File naming**: kebab-case (`user-profile.tsx`, `fire-calculations.ts`)
+- **Component naming**: PascalCase (`UserProfile`, `FireStatusBanner`)
+- **Hooks naming**: camelCase with `use` prefix (`useDashboardData`, `useAutoSave`)
+- **Utility functions**: camelCase (`calculateAge`, `formatFireCurrency`)
+- **Constants**: UPPER_SNAKE_CASE (`INFLATION_RATE`, `PRE_RETURN_RATE`)
 - **API routes**: RESTful (`GET /api/assets`, `POST /api/chat/message`)
 - **Error handling**: Always wrap API calls in try-catch, return proper status codes
 - **Types**: Define TypeScript interfaces for all data models, use Zod for validation
-- **Styling**: Tailwind + shadcn/ui only (no custom CSS files)
-- **Currency formatting**: Indian number format with lakhs/crores using `formatFireCurrency` or `Intl.NumberFormat('en-IN')`
+- **Styling**: Tailwind CSS 4 + shadcn/ui only (no custom CSS files)
+- **Currency formatting**: Indian number format with lakhs/crores using `formatFireCurrency()` or `Intl.NumberFormat('en-IN', {style: 'currency', currency: 'INR'})`
+- **Client components**: Always use `'use client'` directive at the top when using hooks, state, or event handlers
 
 ---
 
@@ -756,11 +817,32 @@ Apply migrations in order:
 
 ### FIRE Calculation Issues
 - All assumptions are hardcoded in `fire-calculations.ts`:
-  - Inflation: 6% annually
-  - Pre-retirement returns: 12% annually
+  - Inflation: 6% annually (`INFLATION_RATE = 0.06`)
+  - Pre-retirement returns: 12% annually (`PRE_RETURN_RATE = 0.12`)
+  - Life expectancy: 85 years (conservative estimate)
   - Post-retirement returns: 8% annually (not currently used in corpus calculation)
 - LIA is clamped to 5-20% range
-- SWR changes at age thresholds: <45, 45-55, >55
+- SWR is calculated dynamically based on retirement duration (years between FIRE age and life expectancy)
+- Check `calculateSafeWithdrawalRateByDuration()` function in `fire-calculations.ts` for the exact SWR logic
+
+### SWR Precision Issue (CRITICAL)
+**Symptom:** Dashboard shows different SWR than onboarding (e.g., 4.0% instead of 3.7%)
+
+**Cause:** Database column `safe_withdrawal_rate` was created as `NUMERIC(4, 2)` which only stores 2 decimal places, causing PostgreSQL to round:
+- 0.037 → 0.04
+- 0.033 → 0.03
+- 0.035 → 0.04
+
+**Fix:** Run `fix-safe-withdrawal-rate-precision.sql` to change column to `NUMERIC(5, 3)`:
+```sql
+ALTER TABLE user_profiles
+ALTER COLUMN safe_withdrawal_rate TYPE NUMERIC(5, 3);
+```
+
+**Verification:**
+1. Check console logs: "Cleaned data" should show correct SWR (e.g., 0.037)
+2. If "Verification query result" shows rounded value (e.g., 0.04), the column needs fixing
+3. After fix, delete user data and re-onboard to test
 
 ---
 

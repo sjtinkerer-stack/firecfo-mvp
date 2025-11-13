@@ -106,15 +106,7 @@ export function FireStatusBanner({
                 </>
               ) : (
                 <>
-                  You&apos;re{' '}
-                  {countdown ? (
-                    <strong>
-                      {countdown.years}y {countdown.months}m
-                    </strong>
-                  ) : (
-                    <strong>{yearsToFire} years</strong>
-                  )}{' '}
-                  from your FIRE goal at age <strong>{fireAge}</strong>
+                  You&apos;re behind target to achieve FIRE by age <strong>{fireAge}</strong>
                 </>
               )}
             </p>

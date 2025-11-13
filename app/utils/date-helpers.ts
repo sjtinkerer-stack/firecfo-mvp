@@ -28,14 +28,15 @@ export function calculateFireTargetDate(dateOfBirth: Date | string, targetAge: n
 }
 
 /**
- * Calculate years to FIRE from current date to target date
+ * Calculate years to FIRE from current date to target date (as decimal for precision)
  * @param fireTargetDate - FIRE target date (Date object or ISO string)
- * @returns Years remaining until FIRE
+ * @returns Years remaining until FIRE (includes fractional months as decimal)
+ * @example For 14 years, 3 months remaining: returns 14.25
  */
 export function calculateYearsToFire(fireTargetDate: Date | string): number {
-  const targetDate = typeof fireTargetDate === 'string' ? parseISO(fireTargetDate) : fireTargetDate;
-  const today = new Date();
-  return Math.max(0, differenceInYears(targetDate, today));
+  const countdown = calculateFireCountdown(fireTargetDate);
+  // Convert to decimal: years + (months / 12)
+  return countdown.years + (countdown.months / 12);
 }
 
 /**

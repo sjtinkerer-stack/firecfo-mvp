@@ -168,6 +168,7 @@ function calculateSafeWithdrawalRateByDuration(retirementYears: number): number 
 export function calculateFireMetrics(
   currentAge: number,
   fireAge: number,
+  yearsToFire: number, // NEW: Now passed as parameter (decimal for precision)
   currentMonthlyExpense: number,
   currentNetWorth: number,
   monthlySavings: number,
@@ -186,7 +187,7 @@ export function calculateFireMetrics(
   const corpusMultiplier = 1 / safeWithdrawalRate;
 
   // 1. Basic calculations
-  const yearsToFire = fireAge - currentAge
+  // yearsToFire is now passed as parameter (decimal for precision)
   const savingsRate = householdIncome > 0 ? (monthlySavings / householdIncome) * 100 : 0
 
   // 2. Post-FIRE expenses (with LIA)

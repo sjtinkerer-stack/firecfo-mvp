@@ -3,10 +3,11 @@
 import { useState, useEffect, useMemo } from 'react'
 import { UseFormReturn } from 'react-hook-form'
 import { motion } from 'framer-motion'
-import { Target, Clock, TrendingUp, ChevronDown, ChevronUp, Calculator, AlertCircle, ArrowLeft } from 'lucide-react'
+import { Target, TrendingUp, AlertCircle, ArrowLeft } from 'lucide-react'
 import { ConversationStep } from './conversation-step'
 import { PillSelector } from './pill-selector'
 import { MicroFeedback } from './micro-feedback'
+import { FireStatusBanner } from '@/app/dashboard/components/fire-status-banner'
 import { Input } from '@/components/ui/input'
 import { Slider } from '@/components/ui/slider'
 import { Button } from '@/components/ui/button'
@@ -24,6 +25,7 @@ import {
   calculateAge,
   createDateFromYearMonth,
   calculateFireTargetDate,
+  calculateYearsToFire,
   formatFireTargetDate,
   formatFireTargetYear,
 } from '@/app/utils/date-helpers'
@@ -80,6 +82,8 @@ const getFireFeedback = (
       variant: 'success',
     }
   } else {
+    // When not on track, banner already shows specific savings gap
+    // Micro feedback should provide encouragement or alternative strategies
     if (metrics.savingsIncrease > metrics.monthlySavings * 0.5) {
       return {
         message: `Consider: Reduce expenses, increase income, extend FIRE timeline, or try Lean FIRE instead.`,
@@ -87,15 +91,13 @@ const getFireFeedback = (
       }
     }
     return {
-      message: `You need to increase monthly savings by ${formatFireCurrency(metrics.savingsIncrease)} to reach your goal.`,
+      message: `Don't worry - small adjustments to your savings or timeline can get you back on track!`,
       variant: 'info',
     }
   }
 }
 
 export function Step5FireGoal({ form, navigationDirection }: Step5FireGoalProps) {
-  const [showCalculationDetails, setShowCalculationDetails] = useState(false)
-
   // Watch form values
   const birthYear = form.watch('birth_year')
   const birthMonth = form.watch('birth_month')
@@ -146,6 +148,14 @@ export function Step5FireGoal({ form, navigationDirection }: Step5FireGoalProps)
     return calculateFireTargetDate(dob, fireAge)
   }, [birthYear, birthMonth, fireAge])
 
+  // Calculate decimal years to FIRE from dates (for precise inflation calculations)
+  const yearsToFire = useMemo(() => {
+    if (!birthYear || !birthMonth || !fireAge || !fireTargetDate) {
+      return fireAge - age // Fallback to integer calculation
+    }
+    return calculateYearsToFire(fireTargetDate) // Returns decimal (e.g., 14.25)
+  }, [birthYear, birthMonth, fireAge, fireTargetDate, age])
+
   // Calculate LIA and FIRE metrics
   const LIA = useMemo(() => {
     return calculateLifestyleInflationAdjustment(age, dependents, savingsRate, fireLifestyleType as FireLifestyleType)
@@ -155,13 +165,14 @@ export function Step5FireGoal({ form, navigationDirection }: Step5FireGoalProps)
     return calculateFireMetrics(
       age,
       fireAge,
+      yearsToFire,
       monthlyExpenses,
       currentNetWorth,
       monthlySavings,
       householdIncome,
       LIA
     )
-  }, [age, fireAge, monthlyExpenses, currentNetWorth, monthlySavings, householdIncome, LIA])
+  }, [age, fireAge, yearsToFire, monthlyExpenses, currentNetWorth, monthlySavings, householdIncome, LIA])
 
   const liaBreakdown = useMemo(() => {
     return getLIABreakdown(age, dependents, savingsRate, fireLifestyleType as FireLifestyleType)
@@ -235,29 +246,6 @@ export function Step5FireGoal({ form, navigationDirection }: Step5FireGoalProps)
               Age range: {age + 1} - {Math.min(80, age + 40)} years
             </p>
           </div>
-
-          {/* Years to FIRE Card */}
-          {fireAge > age && fireTargetDate && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3, type: 'spring' }}
-              className="p-5 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 border-2 border-blue-300 dark:border-blue-800/50 rounded-xl"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" strokeWidth={1.5} />
-                <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-100 uppercase tracking-wide">
-                  You'll Achieve FIRE In
-                </h4>
-              </div>
-              <p className="text-3xl font-bold text-blue-900 dark:text-blue-100">
-                {fireMetrics.yearsToFire} years
-              </p>
-              <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                Target: Age {fireAge} in {formatFireTargetDate(fireTargetDate)} ({formatFireTargetYear(fireTargetDate)})
-              </p>
-            </motion.div>
-          )}
         </div>
       </ConversationStep>
 
@@ -336,192 +324,17 @@ export function Step5FireGoal({ form, navigationDirection }: Step5FireGoalProps)
         </ConversationStep>
       )}
 
-      {/* FIRE Breakdown Card */}
-      {fireAge > age && fireLifestyleType && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4, type: 'spring', delay: 0.1 }}
-          className="p-6 bg-gradient-to-br from-gray-50 to-slate-50 dark:from-gray-900/40 dark:to-slate-900/40 border-2 border-gray-300 dark:border-gray-700 rounded-xl space-y-5"
-        >
-          {/* Header */}
-          <div className="flex items-center gap-2">
-            <Target className="w-5 h-5 text-gray-600 dark:text-gray-400" strokeWidth={1.5} />
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-900 dark:text-gray-100">
-              Your FIRE Plan
-            </h3>
-          </div>
-
-          {/* Post-FIRE Expense */}
-          <div>
-            <p className="text-sm mb-1 text-gray-700 dark:text-gray-300">Post-FIRE Monthly Expense</p>
-            <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-              ₹{formatIndianCurrency(Math.round(fireMetrics.postFireMonthlyExpense))}
-              <span className="text-base font-normal ml-2 text-gray-700 dark:text-gray-300">/ month</span>
-            </p>
-            <p className="text-xs mt-1 text-gray-600 dark:text-gray-400">
-              (₹{formatIndianCurrency(monthlyExpenses)} current + {LIA}% lifestyle adj)
-            </p>
-          </div>
-
-          <div className="h-px bg-gray-300 dark:bg-gray-700" />
-
-          {/* Required Corpus */}
-          <div>
-            <p className="text-sm mb-1 text-gray-700 dark:text-gray-300">Required FIRE Corpus</p>
-            <p className="text-4xl font-bold text-gray-900 dark:text-gray-100">
-              {formatFireCurrency(fireMetrics.requiredCorpus)}
-            </p>
-          </div>
-
-          {/* Current Net Worth - Hide when ₹0 */}
-          {currentNetWorth > 0 && (
-            <div>
-              <p className="text-sm text-gray-700 dark:text-gray-300 mb-1">Current Net Worth</p>
-              <p className="text-2xl font-semibold text-gray-800 dark:text-gray-200">
-                {formatFireCurrency(fireMetrics.currentNetWorth)}
-              </p>
-            </div>
-          )}
-
-          {/* Corpus Gap - Hide when ₹0 (redundant with Required Corpus) */}
-          {currentNetWorth > 0 && (
-            <div>
-              <p className="text-sm text-gray-700 dark:text-gray-300 mb-1">Corpus Gap</p>
-              <p className="text-2xl font-semibold text-gray-800 dark:text-gray-200">
-                {formatFireCurrency(fireMetrics.corpusGap)}
-              </p>
-            </div>
-          )}
-
-          <div className="h-px bg-gray-300 dark:bg-gray-700" />
-
-          {/* Projection */}
-          <div className="space-y-3">
-            <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-              At your current savings rate of ₹{formatIndianCurrency(Math.round(fireMetrics.monthlySavings))}/month:
-            </p>
-
-            <div>
-              <p className="text-sm mb-1 text-gray-700 dark:text-gray-300">
-                Projected Corpus in {fireMetrics.yearsToFire} years
-              </p>
-              <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                {formatFireCurrency(fireMetrics.projectedCorpusAtFire)}
-                {fireMetrics.isOnTrack && (
-                  <span className="text-lg ml-2 text-green-600 dark:text-green-400">✓</span>
-                )}
-              </p>
-            </div>
-
-            {/* Status Message */}
-            <div
-              className={`p-4 rounded-lg ${
-                fireMetrics.isOnTrack
-                  ? 'bg-green-100 dark:bg-green-950/30 border border-green-300 dark:border-green-800'
-                  : 'bg-amber-100 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-800'
-              }`}
-            >
-              {fireMetrics.isOnTrack ? (
-                <p className="text-sm font-semibold text-green-800 dark:text-green-200">
-                  ✅ You're ON TRACK to achieve FIRE!
-                </p>
-              ) : (
-                <div>
-                  <p className="text-sm font-semibold text-amber-800 dark:text-amber-200 mb-2">
-                    ⚠️ You need to increase your savings
-                  </p>
-                  <p className="text-sm text-amber-700 dark:text-amber-300">
-                    Save ₹{formatIndianCurrency(Math.round(fireMetrics.monthlySavingsNeeded))}/month (increase by ₹
-                    {formatIndianCurrency(Math.round(fireMetrics.savingsIncrease))}) to reach your goal
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Expandable Calculation Details */}
-          <button
-            type="button"
-            onClick={() => setShowCalculationDetails(!showCalculationDetails)}
-            className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
-          >
-            <Calculator className="w-4 h-4" />
-            How we calculated this
-            {showCalculationDetails ? (
-              <ChevronUp className="w-4 h-4" />
-            ) : (
-              <ChevronDown className="w-4 h-4" />
-            )}
-          </button>
-
-          {showCalculationDetails && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3 }}
-              className="p-4 rounded-lg space-y-3 text-sm bg-gray-100 dark:bg-gray-900/30"
-            >
-              <div>
-                <p className="font-semibold mb-2 text-gray-900 dark:text-gray-100">Post-FIRE Expense:</p>
-                <p className="text-gray-800 dark:text-gray-200">
-                  Base monthly expense: ₹{formatIndianCurrency(monthlyExpenses)}
-                </p>
-                <p className="text-gray-800 dark:text-gray-200">Lifestyle inflation: +{LIA}%</p>
-                <p className="text-gray-800 dark:text-gray-200">
-                  = Post-FIRE expense: ₹{formatIndianCurrency(Math.round(fireMetrics.postFireMonthlyExpense))}
-                </p>
-              </div>
-
-              <div>
-                <p className="font-semibold mb-2 text-gray-900 dark:text-gray-100">Required Corpus:</p>
-                <p className="text-gray-800 dark:text-gray-200">
-                  Annual expense: ₹{formatIndianCurrency(Math.round(fireMetrics.postFireAnnualExpense))}
-                </p>
-                <p className="text-gray-800 dark:text-gray-200">
-                  Inflation adjusted ({fireMetrics.yearsToFire} yrs): ₹
-                  {formatIndianCurrency(Math.round(fireMetrics.inflationAdjustedAnnualExpense))}
-                </p>
-                <p className="text-gray-800 dark:text-gray-200">
-                  × {fireMetrics.corpusMultiplier.toFixed(1)} ({(fireMetrics.safeWithdrawalRate * 100).toFixed(1)}% SWR): {formatFireCurrency(fireMetrics.requiredCorpus)}
-                </p>
-                <p className="text-xs mt-1 italic text-gray-700 dark:text-gray-300">
-                  {fireAge < 45 && '• Conservative 3.5% SWR for early retirement (longer withdrawal period)'}
-                  {fireAge >= 45 && fireAge <= 55 && '• Standard 4% SWR for traditional retirement timeline'}
-                  {fireAge > 55 && '• Optimistic 4.5% SWR for later retirement (shorter withdrawal period)'}
-                </p>
-              </div>
-
-              <div>
-                <p className="font-semibold mb-2 text-gray-900 dark:text-gray-100">
-                  Lifestyle Adjustment Breakdown:
-                </p>
-                <p className="text-gray-800 dark:text-gray-200">• Base: {liaBreakdown.base}%</p>
-                <p className="text-gray-800 dark:text-gray-200">
-                  • Age factor ({age}): {liaBreakdown.ageFactor > 0 ? '+' : ''}
-                  {liaBreakdown.ageFactor}%
-                </p>
-                <p className="text-gray-800 dark:text-gray-200">
-                  • Dependents ({dependents}): {liaBreakdown.dependentsFactor > 0 ? '+' : ''}
-                  {liaBreakdown.dependentsFactor}%
-                </p>
-                <p className="text-gray-800 dark:text-gray-200">
-                  • Savings rate ({Math.round(savingsRate)}%): {liaBreakdown.savingsRateFactor > 0 ? '+' : ''}
-                  {liaBreakdown.savingsRateFactor}%
-                </p>
-                <p className="text-gray-800 dark:text-gray-200">
-                  • {fireLifestyleType.charAt(0).toUpperCase() + fireLifestyleType.slice(1)} FIRE:{' '}
-                  {liaBreakdown.lifestyleMultiplier > 0 ? '+' : ''}
-                  {liaBreakdown.lifestyleMultiplier}%
-                </p>
-                <p className="font-semibold mt-1 text-gray-800 dark:text-gray-200">
-                  Total: {liaBreakdown.total}%
-                </p>
-              </div>
-            </motion.div>
-          )}
-        </motion.div>
+      {/* FIRE Status Banner */}
+      {fireAge > age && fireLifestyleType && fireTargetDate && (
+        <FireStatusBanner
+          isOnTrack={fireMetrics.isOnTrack}
+          fireAge={fireAge}
+          fireTargetDate={fireTargetDate}
+          fireLifestyleType={fireLifestyleType as FireLifestyleType}
+          yearsToFire={yearsToFire}
+          monthlySavingsNeeded={fireMetrics.monthlySavingsNeeded}
+          currentMonthlySavings={monthlySavings}
+        />
       )}
 
       {/* Micro Feedback */}

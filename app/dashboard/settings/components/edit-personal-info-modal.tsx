@@ -150,6 +150,7 @@ export function EditPersonalInfoModal({
     const metrics = calculateFireMetrics(
       age,
       currentData.fireTargetAge,
+      yearsToFire,
       currentData.monthlyExpenses,
       currentData.currentNetWorth,
       monthlySavings,
@@ -252,9 +253,12 @@ export function EditPersonalInfoModal({
         currentData.fireLifestyleType
       );
 
+      const yearsToFire = currentData.fireTargetAge - age;
+
       const fireMetrics = calculateFireMetrics(
         age,
         currentData.fireTargetAge,
+        yearsToFire,
         currentData.monthlyExpenses,
         currentData.currentNetWorth,
         monthlySavings,

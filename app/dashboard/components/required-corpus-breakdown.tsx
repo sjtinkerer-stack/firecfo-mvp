@@ -38,10 +38,17 @@ export function RequiredCorpusBreakdown({
   const [showLIADetails, setShowLIADetails] = useState(false);
 
   // Calculate intermediate values
+  // IMPORTANT: Reverse-calculate inflation-adjusted expense from stored corpus
+  // This ensures displayed formula (A × B = C) is mathematically accurate
+  // Instead of forward calculation which can have floating-point drift
+  // Use ROUNDED multiplier to match what we display (27.0 instead of 27.027...)
+  const displayMultiplier = Math.round(corpusMultiplier * 10) / 10; // Round to 1 decimal
+  const inflationAdjustedAnnualExpense = requiredCorpus / displayMultiplier;
+
+  // Keep these for display purposes (showing the breakdown)
   const postFireAnnualExpense = postFireMonthlyExpense * 12;
   const inflationRate = 0.06; // 6% annual inflation
   const inflationMultiplier = Math.pow(1 + inflationRate, yearsToFire);
-  const inflationAdjustedAnnualExpense = postFireAnnualExpense * inflationMultiplier;
 
   // LIA factor breakdown
   const getLIAFactors = () => {
@@ -220,7 +227,15 @@ export function RequiredCorpusBreakdown({
                 <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
                   <div className="flex justify-between">
                     <span>Years to FIRE:</span>
-                    <span className="font-medium">{yearsToFire} years</span>
+                    <span className="font-medium">
+                      {(() => {
+                        const years = Math.floor(yearsToFire);
+                        const months = Math.round((yearsToFire - years) * 12);
+                        return months === 0
+                          ? `${years} years`
+                          : `${years} years, ${months} month${months !== 1 ? 's' : ''}`;
+                      })()}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span>Annual inflation:</span>
@@ -254,15 +269,21 @@ export function RequiredCorpusBreakdown({
                   </div>
                   <div className="flex justify-between">
                     <span>Corpus multiplier:</span>
-                    <span className="font-medium">{corpusMultiplier}x</span>
+                    <span className="font-medium">{displayMultiplier}x</span>
                   </div>
                   <div className="pt-2 text-xs text-gray-500 dark:text-gray-500">
-                    {fireAge < 45 && '🛡️ Conservative rate for early FIRE (longer withdrawal period)'}
-                    {fireAge >= 45 && fireAge <= 55 && '✓ Standard Trinity Study rate (~30 year horizon)'}
-                    {fireAge > 55 && '📈 Optimistic rate for shorter withdrawal period'}
+                    {(() => {
+                      const retirementDuration = 85 - fireAge;
+                      if (retirementDuration >= 45) return '🛡️ Very conservative SWR for 45+ year retirement';
+                      if (retirementDuration >= 40) return '🛡️ Conservative SWR for 40-45 year retirement';
+                      if (retirementDuration >= 35) return '✓ Moderate SWR for 35-40 year retirement';
+                      if (retirementDuration >= 30) return '✓ Standard Trinity Study SWR (30-35 years)';
+                      if (retirementDuration >= 25) return '📈 Higher SWR for 25-30 year retirement';
+                      return '📈 Optimistic SWR for <25 year retirement';
+                    })()}
                   </div>
                   <div className="pt-2 italic">
-                    ₹{inflationAdjustedAnnualExpense.toLocaleString('en-IN')} × {corpusMultiplier} = ₹{requiredCorpus.toLocaleString('en-IN')}
+                    ₹{inflationAdjustedAnnualExpense.toLocaleString('en-IN')} × {displayMultiplier} = ₹{requiredCorpus.toLocaleString('en-IN')}
                   </div>
                 </div>
               </div>

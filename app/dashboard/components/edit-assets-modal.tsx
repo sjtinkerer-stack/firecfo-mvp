@@ -115,9 +115,12 @@ export function EditAssetsModal({
         currentData.fireLifestyleType
       );
 
+      const yearsToFire = currentData.fireAge - currentData.age;
+
       const fireMetrics = calculateFireMetrics(
         currentData.age,
         currentData.fireAge,
+        yearsToFire,
         currentData.monthlyExpenses,
         newNetWorth,
         monthlySavings,
@@ -134,7 +137,11 @@ export function EditAssetsModal({
           cash,
           real_estate: realEstate,
           other_assets: otherAssets,
-          // Update calculated metrics
+          // Update ALL calculated metrics (not just projected corpus)
+          lifestyle_inflation_adjustment: fireMetrics.lifestyleInflationAdjustment,
+          safe_withdrawal_rate: fireMetrics.safeWithdrawalRate,
+          post_fire_monthly_expense: fireMetrics.postFireMonthlyExpense,
+          required_corpus: fireMetrics.requiredCorpus,
           projected_corpus_at_fire: fireMetrics.projectedCorpusAtFire,
           is_on_track: fireMetrics.isOnTrack,
           monthly_savings_needed: fireMetrics.monthlySavingsNeeded,

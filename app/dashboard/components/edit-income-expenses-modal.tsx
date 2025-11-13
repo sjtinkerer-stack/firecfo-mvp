@@ -124,9 +124,12 @@ export function EditIncomeExpensesModal({
         currentData.fireLifestyleType
       );
 
+      const yearsToFire = currentData.fireAge - currentData.age;
+
       const fireMetrics = calculateFireMetrics(
         currentData.age,
         currentData.fireAge,
+        yearsToFire,
         monthlyExpenses,
         currentData.currentNetWorth,
         monthlySavings,

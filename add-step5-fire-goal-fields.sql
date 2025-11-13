@@ -85,13 +85,15 @@ BEGIN
   END IF;
 
   -- Calculated field: Safe Withdrawal Rate used in calculation
+  -- IMPORTANT: Must be NUMERIC(5, 3) to store values like 0.037, 0.033, 0.045 with full precision
+  -- NUMERIC(4, 2) would round 0.037 to 0.04, causing calculation errors
   IF NOT EXISTS (
     SELECT 1 FROM information_schema.columns
     WHERE table_name = 'user_profiles'
     AND column_name = 'safe_withdrawal_rate'
   ) THEN
     ALTER TABLE user_profiles
-    ADD COLUMN safe_withdrawal_rate NUMERIC(4, 2);
+    ADD COLUMN safe_withdrawal_rate NUMERIC(5, 3);
   END IF;
 
 END $$;

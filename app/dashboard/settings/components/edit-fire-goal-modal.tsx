@@ -101,6 +101,7 @@ export function EditFireGoalModal({
     const metrics = calculateFireMetrics(
       currentData.age,
       fireTargetAge,
+      yearsToFire,
       currentData.monthlyExpenses,
       currentData.currentNetWorth,
       monthlySavings,
@@ -174,9 +175,12 @@ export function EditFireGoalModal({
         lifestyleType
       );
 
+      const yearsToFire = fireTargetAge - currentData.age;
+
       const fireMetrics = calculateFireMetrics(
         currentData.age,
         fireTargetAge,
+        yearsToFire,
         currentData.monthlyExpenses,
         currentData.currentNetWorth,
         monthlySavings,
