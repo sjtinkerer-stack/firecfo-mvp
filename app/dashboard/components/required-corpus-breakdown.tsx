@@ -37,18 +37,16 @@ export function RequiredCorpusBreakdown({
   const [isExpanded, setIsExpanded] = useState(false);
   const [showLIADetails, setShowLIADetails] = useState(false);
 
-  // Calculate intermediate values
-  // IMPORTANT: Reverse-calculate inflation-adjusted expense from stored corpus
-  // This ensures displayed formula (A × B = C) is mathematically accurate
-  // Instead of forward calculation which can have floating-point drift
-  // Use ROUNDED multiplier to match what we display (27.0 instead of 27.027...)
-  const displayMultiplier = Math.round(corpusMultiplier * 10) / 10; // Round to 1 decimal
-  const inflationAdjustedAnnualExpense = requiredCorpus / displayMultiplier;
-
-  // Keep these for display purposes (showing the breakdown)
+  // Calculate intermediate values for educational display
   const postFireAnnualExpense = postFireMonthlyExpense * 12;
   const inflationRate = 0.06; // 6% annual inflation
   const inflationMultiplier = Math.pow(1 + inflationRate, yearsToFire);
+
+  // Forward-calculate inflation-adjusted expense (educational - may have minor rounding vs stored value)
+  const inflationAdjustedAnnualExpense = postFireAnnualExpense * inflationMultiplier;
+
+  // Display multiplier for corpus calculation (rounded for readability)
+  const displayMultiplier = Math.round(corpusMultiplier * 10) / 10; // Round to 1 decimal
 
   // LIA factor breakdown
   const getLIAFactors = () => {

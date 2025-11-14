@@ -152,10 +152,10 @@ export function OnboardingWizard() {
     return {
       lifestyle_inflation_adjustment: LIA,
       safe_withdrawal_rate: metrics.safeWithdrawalRate,
-      post_fire_monthly_expense: Math.round(metrics.postFireMonthlyExpense),
-      required_corpus: Math.round(metrics.requiredCorpus),
-      projected_corpus_at_fire: Math.round(metrics.projectedCorpusAtFire),
-      monthly_savings_needed: Math.round(metrics.monthlySavingsNeeded),
+      post_fire_monthly_expense: metrics.postFireMonthlyExpense,
+      required_corpus: metrics.requiredCorpus,
+      projected_corpus_at_fire: metrics.projectedCorpusAtFire,
+      monthly_savings_needed: metrics.monthlySavingsNeeded,
       is_on_track: metrics.isOnTrack,
     }
   }, [
