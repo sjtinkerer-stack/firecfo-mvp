@@ -329,7 +329,7 @@ export function Step5FireGoal({ form, navigationDirection }: Step5FireGoalProps)
         <FireStatusBanner
           isOnTrack={fireMetrics.isOnTrack}
           fireAge={fireAge}
-          fireTargetDate={fireTargetDate}
+          fireTargetDate={fireTargetDate.toISOString()}
           fireLifestyleType={fireLifestyleType as FireLifestyleType}
           yearsToFire={yearsToFire}
           monthlySavingsNeeded={fireMetrics.monthlySavingsNeeded}
