@@ -32,7 +32,7 @@ graph TB
     end
 
     subgraph "AI & Notification Services"
-        S[Anthropic Claude API<br/>AI Financial Advisor]
+        S[OpenAI API (GPT-4o)<br/>AI Financial Advisor]
         T[Resend API<br/>Email Notifications]
     end
 
@@ -233,9 +233,9 @@ sequenceDiagram
     participant ChatUI
     participant APIRoute
     participant Supabase
-    participant Claude
+    participant OpenAI
 
-    Note over User,Claude: AI Chat Session
+    Note over User,OpenAI: AI Chat Session
 
     User->>ChatUI: Open AI Advisor Chat
     ChatUI->>Supabase: Fetch user profile + recent messages
@@ -253,11 +253,11 @@ sequenceDiagram
 
     APIRoute->>APIRoute: Build context prompt with:<br/>- User financial data<br/>- FIRE goals<br/>- Net worth<br/>- Savings rate
 
-    APIRoute->>Claude: POST to Anthropic API
-    Note right of APIRoute: Claude 3.5 Sonnet<br/>System: Financial Advisor<br/>Context: User data<br/>Message: User question
+    APIRoute->>OpenAI: POST to OpenAI API
+    Note right of APIRoute: GPT-4o<br/>System: Financial Advisor<br/>Context: User data<br/>Message: User question
 
-    Claude->>Claude: Generate personalized response
-    Claude-->>APIRoute: AI response + usage stats
+    OpenAI->>OpenAI: Generate personalized response
+    OpenAI-->>APIRoute: AI response + usage stats
 
     APIRoute->>Supabase: INSERT into chat_messages<br/>(user message + AI response)
     Supabase-->>APIRoute: Success
@@ -266,13 +266,13 @@ sequenceDiagram
     ChatUI->>ChatUI: Display AI message with typing animation
     ChatUI->>User: Show personalized advice
 
-    Note over User,Claude: Follow-up Questions
+    Note over User,OpenAI: Follow-up Questions
     User->>ChatUI: "What about tax optimization?"
     ChatUI->>APIRoute: POST /api/chat/message
     APIRoute->>Supabase: Fetch conversation context
     Supabase-->>APIRoute: Last 10 messages
-    APIRoute->>Claude: Continue conversation with context
-    Claude-->>APIRoute: Contextual response
+    APIRoute->>OpenAI: Continue conversation with context
+    OpenAI-->>APIRoute: Contextual response
     APIRoute->>Supabase: Save messages
     APIRoute-->>ChatUI: Response
     ChatUI->>User: Display answer
@@ -377,7 +377,7 @@ graph TB
     subgraph "Layer 6: External Providers"
         F1[Google OAuth]
         F2[LinkedIn OAuth]
-        F3[Anthropic Claude API<br/>Future]
+        F3[OpenAI API (GPT-4o)<br/>Future]
         F4[Resend Email API<br/>Future]
     end
 
@@ -495,7 +495,7 @@ graph LR
     subgraph "External Services"
         D1[Supabase Cloud<br/>Database + Auth]
         D2[OAuth Providers<br/>Google + LinkedIn]
-        D3[Anthropic Claude API<br/>AI Chat Advisor]
+        D3[OpenAI API (GPT-4o)<br/>AI Chat Advisor]
     end
 
     subgraph "Monitoring & Analytics"
@@ -574,7 +574,7 @@ mindmap
         Message Input
         Conversation History
         Typing Indicators
-      Claude 3 5 Sonnet Integration
+      GPT-4o Integration
         Contextual Responses
         Financial Profile Context
         Multi turn Conversations
@@ -666,7 +666,7 @@ flowchart TD
 ## AI Financial Advisor Chat Architecture (Planned)
 
 ### Overview
-The AI Financial Advisor is a core feature that will provide personalized FIRE planning advice using Anthropic's Claude 3.5 Sonnet model. The chat system integrates the user's complete financial profile to deliver contextual, actionable recommendations.
+The AI Financial Advisor is a core feature that will provide personalized FIRE planning advice using OpenAI's GPT-4o model. The chat system integrates the user's complete financial profile to deliver contextual, actionable recommendations.
 
 ### Architecture Components
 
@@ -695,8 +695,8 @@ graph TB
     end
 
     subgraph "AI Integration"
-        D1[Anthropic SDK Client]
-        D2[Claude 3.5 Sonnet]
+        D1[OpenAI SDK Client]
+        D2[GPT-4o]
         D3[System Prompt Builder]
         D4[Token Counter]
     end
@@ -766,7 +766,7 @@ Response (Streaming):
   content: string          // Streamed response chunks
   role: "assistant"
   metadata: {
-    model: "claude-3-5-sonnet-20241022"
+    model: "gpt-4o"
     tokensUsed: number
     conversationId: string
   }
@@ -802,9 +802,9 @@ CREATE POLICY "Users can insert own messages"
 ### Message Flow
 1. **User sends message** → Chat UI captures input
 2. **API authentication** → Verify JWT token
-3. **Fetch context** → Get user profile + last 10 messages
+3. **Fetch context** → Get user profile + last 20 messages
 4. **Build prompt** → Combine system prompt + user data + conversation
-5. **Call Claude API** → Stream response with Anthropic SDK
+5. **Call OpenAI API** → Stream response with OpenAI SDK
 6. **Save messages** → Store both user message and AI response
 7. **Stream to UI** → Display response with typing animation
 
@@ -819,13 +819,17 @@ CREATE POLICY "Users can insert own messages"
 - **API rate limiting**: Prevent abuse (e.g., 50 messages/hour)
 - **Content filtering**: Sanitize user input, validate message length
 - **PII protection**: Never log sensitive financial data
-- **API key security**: Store `ANTHROPIC_API_KEY` in environment variables
+- **API key security**: Store `OPENAI_API_KEY` in environment variables
 
 ### Cost Optimization
-- **Model selection**: Claude 3.5 Sonnet (balanced performance/cost)
-- **Context pruning**: Limit conversation history to 10 messages
+- **Model selection**: GPT-4o for complex reasoning, GPT-4o-mini for simple queries
+- **Pricing** (per 1M tokens):
+  - GPT-4o: $2.50 input / $10.00 output
+  - GPT-4o-mini: $0.15 input / $0.60 output (95% cheaper)
+- **Context pruning**: Limit conversation history to 20 messages
 - **Token counting**: Track usage per user for analytics
 - **Caching**: Cache common responses (e.g., "What is FIRE?")
+- **Recommendation**: Use GPT-4o-mini by default for ~$0.02 per 50 messages
 
 ### Future Enhancements
 - **Voice input**: Speech-to-text for mobile users
@@ -855,7 +859,7 @@ CREATE POLICY "Users can insert own messages"
 | Form Management | React Hook Form + Zod | 7.66 + 4.1 |
 | Charts | Recharts | 3.3.0 |
 | Animation | Framer Motion | 12.23 |
-| AI Integration | Anthropic Claude 3.5 Sonnet | Planned |
+| AI Integration | OpenAI GPT-4o / GPT-4o-mini | Planned |
 
 ### 3. **Data Flow Pattern**
 1. **User Input** → React Hook Form
@@ -896,7 +900,7 @@ Vercel Auto-Deploy → Build → Type Check → Deploy to Production
 ```
 
 ### 8. **Future Architecture Evolution**
-- **AI Integration**: Anthropic Claude API for financial advice
+- **AI Integration**: OpenAI API (GPT-4o) for financial advice
 - **Email System**: Resend API for notifications
 - **Data Analytics**: Historical net worth tracking
 - **Real-time Updates**: Supabase real-time subscriptions
@@ -929,9 +933,9 @@ firecfo-mvp/
 │   │   ├── page.tsx             # Chat interface
 │   │   ├── components/          # Message bubbles, input
 │   │   └── hooks/               # useChatStream
-│   ├── api/                     # API Routes (Planned)
+│   ├── api/                     # API Routes (Implemented)
 │   │   └── chat/
-│   │       └── message/route.ts # Claude API integration
+│   │       └── route.ts         # OpenAI API integration
 │   ├── layout.tsx               # Root layout
 │   ├── page.tsx                 # Landing page
 │   └── globals.css              # Global styles
@@ -940,7 +944,8 @@ firecfo-mvp/
 │   └── auth/                    # Auth components
 ├── lib/
 │   ├── supabase.ts              # Supabase client singleton
-│   ├── anthropic.ts             # Anthropic client (Planned)
+│   ├── ai/
+│   │   └── tools-openai.ts      # OpenAI function tools (Implemented)
 │   └── utils.ts                 # Utilities
 ├── middleware.ts                # Auth routing middleware
 ├── next.config.ts               # Next.js config
@@ -958,8 +963,8 @@ firecfo-mvp/
 NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJxxx...
 
-# AI Chat Integration (Planned)
-ANTHROPIC_API_KEY=sk-ant-xxx      # Claude 3.5 Sonnet for AI Financial Advisor
+# AI Chat Integration (Implemented)
+OPENAI_API_KEY=sk-proj-xxx      # OpenAI GPT-4o for AI Financial Advisor
 
 # Future Integrations
 RESEND_API_KEY=re_xxxx             # Email notifications
@@ -972,7 +977,7 @@ RESEND_API_KEY=re_xxxx             # Email notifications
 FireCFO MVP is a **full-stack financial planning web application** built with:
 - **Modern React 19 + Next.js 16** for the frontend
 - **Supabase** as Backend-as-a-Service for database and authentication
-- **Anthropic Claude 3.5 Sonnet** for AI-powered financial advising (planned)
+- **OpenAI GPT-4o / GPT-4o-mini** for AI-powered financial advising
 - **TypeScript** for type safety across the entire stack
 - **Tailwind CSS** for responsive styling
 - **OAuth 2.0** for seamless authentication
@@ -984,7 +989,7 @@ FireCFO MVP is a **full-stack financial planning web application** built with:
 - **5-Step Onboarding Wizard**: Conversational UI to collect personal, financial, and FIRE goal data
 - **FIRE Dashboard**: Progress tracking, net worth visualization, and goal monitoring
 - **Settings & Editing**: User-friendly modals to update profile and recalculate FIRE metrics
-- **AI Financial Advisor** (planned): Personalized FIRE advice via Claude 3.5 Sonnet with full financial context
+- **AI Financial Advisor** (planned): Personalized FIRE advice via GPT-4o with full financial context
 - **Smart Calculations**: Dynamic Safe Withdrawal Rate, Lifestyle Inflation Adjustment, corpus projections
 
 The architecture is designed for rapid MVP development while maintaining scalability for future features like tax optimization, historical net worth tracking, and real-time notifications.
@@ -993,15 +998,24 @@ The architecture is designed for rapid MVP development while maintaining scalabi
 
 **Diagram Created**: 2025-11-20
 **Last Updated**: 2025-11-20
-**Version**: 2.0
+**Version**: 3.0
 **Application**: FireCFO MVP
-**Architecture Type**: Monolithic SPA with BaaS + AI Integration
+**Architecture Type**: Monolithic SPA with BaaS + OpenAI Integration
 
-**Changelog v2.0**:
-- Added AI Financial Advisor Chat architecture with Anthropic Claude 3.5 Sonnet
+**Changelog v3.0** (2025-11-20):
+- **CORRECTED**: Updated AI integration from Anthropic Claude to OpenAI GPT-4o
+- Updated all architecture diagrams to reflect OpenAI API usage
+- Added GPT-4o and GPT-4o-mini model specifications
+- Updated pricing information for OpenAI models
+- Changed environment variable from ANTHROPIC_API_KEY to OPENAI_API_KEY
+- Updated API endpoint documentation for OpenAI streaming
+- Included cost comparison between GPT-4o and GPT-4o-mini
+
+**Changelog v2.0** (2025-11-20):
+- Added AI Financial Advisor Chat architecture
 - Included chat_messages database table schema and RLS policies
 - Added AI Chat data flow sequence diagram
 - Documented API endpoint design for `/api/chat/message`
 - Added system prompt strategy and context management
 - Included cost optimization and security considerations for AI chat
-- Updated feature module map to highlight AI chat as core planned feature
+- Updated feature module map to highlight AI chat as core feature
