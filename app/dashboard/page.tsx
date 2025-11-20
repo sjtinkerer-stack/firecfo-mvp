@@ -10,8 +10,18 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { DashboardOverview } from './components/dashboard-overview';
+import { FloatingChatButton } from './components/chat/floating-chat-button';
 import { LogOut, Settings } from 'lucide-react';
 import type { User, AuthChangeEvent, Session } from '@supabase/supabase-js';
+
+// Helper function to extract display name from email
+const getDisplayNameFromEmail = (email: string): string => {
+  const username = email.split('@')[0];
+  // Remove numbers and special characters, replace dots/underscores with spaces
+  const cleaned = username.replace(/[0-9_.-]/g, ' ').trim();
+  // Capitalize first letter of first word
+  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+};
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -62,7 +72,11 @@ export default function DashboardPage() {
 
         // All checks passed - user can access dashboard
         setUser(user);
-        setUserName(user.user_metadata?.full_name || user.user_metadata?.name || null);
+        setUserName(
+          user.user_metadata?.full_name ||
+            user.user_metadata?.name ||
+            (user.email ? getDisplayNameFromEmail(user.email) : null)
+        );
         setUserEmail(user.email || '');
         setLoading(false);
         setHasChecked(true);
@@ -139,6 +153,9 @@ export default function DashboardPage() {
         {/* Dashboard Content */}
         <DashboardOverview />
       </div>
+
+      {/* Floating AI Chat Button */}
+      <FloatingChatButton />
     </div>
   );
 }
