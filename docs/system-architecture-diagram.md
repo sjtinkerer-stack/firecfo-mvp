@@ -9,54 +9,60 @@ graph TB
         B --> C[Onboarding Wizard]
         C --> D[Dashboard]
         D --> E[Settings & Modals]
+        D --> F[AI Financial Advisor Chat]
 
-        F[React 19 + Next.js 16]
-        G[Tailwind CSS + Framer Motion]
-        H[Recharts + Radix UI]
+        G[React 19 + Next.js 16]
+        H[Tailwind CSS + Framer Motion]
+        I[Recharts + Radix UI]
     end
 
     subgraph "Application Layer - Next.js App Router"
-        I[Middleware<br/>Auth Check & Routing]
-        J[API Routes<br/>/auth/callback]
-        K[Server Components]
-        L[Client Components]
+        J[Middleware<br/>Auth Check & Routing]
+        K[API Routes<br/>/api/chat]
+        L[Auth Callback Route<br/>/auth/callback]
+        M[Server Components]
+        N[Client Components]
     end
 
     subgraph "Backend Services"
-        M[Supabase PostgreSQL<br/>Database]
-        N[Supabase Auth<br/>JWT + OAuth]
-        O[Google OAuth Provider]
-        P[LinkedIn OAuth Provider]
+        O[Supabase PostgreSQL<br/>Database]
+        P[Supabase Auth<br/>JWT + OAuth]
+        Q[Google OAuth Provider]
+        R[LinkedIn OAuth Provider]
     end
 
-    subgraph "Future Integrations"
-        Q[Anthropic Claude API<br/>AI Financial Advisor]
-        R[Resend API<br/>Email Notifications]
+    subgraph "AI & Notification Services"
+        S[Anthropic Claude API<br/>AI Financial Advisor]
+        T[Resend API<br/>Email Notifications]
     end
 
-    A --> I
-    B --> I
-    C --> I
-    D --> I
-    E --> I
+    A --> J
+    B --> J
+    C --> J
+    D --> J
+    E --> J
+    F --> J
 
-    I --> J
-    I --> K
-    I --> L
-
+    J --> K
+    J --> L
+    J --> M
     J --> N
-    K --> M
-    L --> M
-    L --> N
 
+    K --> S
+    K --> O
+    L --> P
+    M --> O
     N --> O
     N --> P
 
-    D -.Future.-> Q
-    D -.Future.-> R
+    P --> Q
+    P --> R
 
-    style Q fill:#f9f,stroke:#333,stroke-width:2px,stroke-dasharray: 5 5
-    style R fill:#f9f,stroke:#333,stroke-width:2px,stroke-dasharray: 5 5
+    F --> K
+    D -.Future.-> T
+
+    style S fill:#9f6,stroke:#333,stroke-width:2px
+    style T fill:#f9f,stroke:#333,stroke-width:2px,stroke-dasharray: 5 5
 ```
 
 ## Detailed Component Architecture
@@ -70,6 +76,7 @@ graph TB
         A4["/app/onboarding/page.tsx<br/>5-Step Wizard"]
         A5["/app/dashboard/page.tsx<br/>FIRE Dashboard"]
         A6["/app/dashboard/settings/page.tsx<br/>Settings Page"]
+        A7["/app/chat/page.tsx<br/>AI Advisor Chat<br/>Planned"]
     end
 
     subgraph "Frontend - Components"
@@ -77,6 +84,7 @@ graph TB
         B2[OnboardingSteps 1-5<br/>Personal, Income, Expenses,<br/>Net Worth, FIRE Goal]
         B3[DashboardOverview<br/>Progress Bar, Charts]
         B4[Edit Modals<br/>Personal, Income, Assets,<br/>FIRE Goal]
+        B5[ChatInterface<br/>Message List, Input<br/>Planned]
     end
 
     subgraph "Frontend - Hooks & State"
@@ -102,6 +110,7 @@ graph TB
         F1[(user_profiles Table<br/>UUID PK, 40+ columns)]
         F2[Row Level Security<br/>RLS Policies]
         F3[Auth Users Table<br/>JWT Management]
+        F4[(chat_messages Table<br/>Planned: AI Conversations)]
     end
 
     A1 --> E1
@@ -110,12 +119,14 @@ graph TB
     A4 --> B2
     A5 --> B3
     A6 --> B4
+    A7 --> B5
 
     B1 --> E3
     B2 --> C1
     B2 --> C3
     B3 --> C2
     B4 --> C2
+    B5 --> E3
 
     C1 --> D1
     C1 --> E3
@@ -127,9 +138,14 @@ graph TB
     E2 --> E3
     E3 --> F1
     E3 --> F3
+    E3 --> F4
 
     F1 --> F2
     F3 --> F2
+    F4 --> F2
+
+    style A7 fill:#9f6,stroke:#333,stroke-width:1px,stroke-dasharray: 3 3
+    style B5 fill:#9f6,stroke:#333,stroke-width:1px,stroke-dasharray: 3 3
 ```
 
 ## Data Flow Architecture
@@ -205,6 +221,61 @@ sequenceDiagram
     Frontend->>Supabase: SELECT updated data
     Supabase-->>Frontend: Fresh data
     Frontend->>Browser: Update UI
+
+    Note over User,OAuth: AI Chat Flow (Planned)
+```
+
+## AI Financial Advisor Chat Flow (Planned)
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant ChatUI
+    participant APIRoute
+    participant Supabase
+    participant Claude
+
+    Note over User,Claude: AI Chat Session
+
+    User->>ChatUI: Open AI Advisor Chat
+    ChatUI->>Supabase: Fetch user profile + recent messages
+    Supabase-->>ChatUI: Profile data + chat history
+    ChatUI->>ChatUI: Display conversation history
+
+    User->>ChatUI: Type message "How can I retire earlier?"
+    ChatUI->>ChatUI: Display user message
+
+    ChatUI->>APIRoute: POST /api/chat/message
+    Note right of APIRoute: {message, userId}
+
+    APIRoute->>Supabase: Fetch user financial data
+    Supabase-->>APIRoute: Complete FIRE profile
+
+    APIRoute->>APIRoute: Build context prompt with:<br/>- User financial data<br/>- FIRE goals<br/>- Net worth<br/>- Savings rate
+
+    APIRoute->>Claude: POST to Anthropic API
+    Note right of APIRoute: Claude 3.5 Sonnet<br/>System: Financial Advisor<br/>Context: User data<br/>Message: User question
+
+    Claude->>Claude: Generate personalized response
+    Claude-->>APIRoute: AI response + usage stats
+
+    APIRoute->>Supabase: INSERT into chat_messages<br/>(user message + AI response)
+    Supabase-->>APIRoute: Success
+
+    APIRoute-->>ChatUI: AI response + metadata
+    ChatUI->>ChatUI: Display AI message with typing animation
+    ChatUI->>User: Show personalized advice
+
+    Note over User,Claude: Follow-up Questions
+    User->>ChatUI: "What about tax optimization?"
+    ChatUI->>APIRoute: POST /api/chat/message
+    APIRoute->>Supabase: Fetch conversation context
+    Supabase-->>APIRoute: Last 10 messages
+    APIRoute->>Claude: Continue conversation with context
+    Claude-->>APIRoute: Contextual response
+    APIRoute->>Supabase: Save messages
+    APIRoute-->>ChatUI: Response
+    ChatUI->>User: Display answer
 ```
 
 ## Database Schema
@@ -212,6 +283,7 @@ sequenceDiagram
 ```mermaid
 erDiagram
     AUTH_USERS ||--|| USER_PROFILES : "has one"
+    AUTH_USERS ||--o{ CHAT_MESSAGES : "has many"
 
     AUTH_USERS {
         uuid id PK
@@ -219,6 +291,15 @@ erDiagram
         string email UK
         string encrypted_password
         jsonb raw_user_meta_data
+    }
+
+    CHAT_MESSAGES {
+        uuid id PK
+        uuid user_id FK "FK to auth.users"
+        timestamp created_at
+        text role "user or assistant"
+        text content "Message content"
+        jsonb metadata "Optional: tokens, model"
     }
 
     USER_PROFILES {
@@ -414,6 +495,7 @@ graph LR
     subgraph "External Services"
         D1[Supabase Cloud<br/>Database + Auth]
         D2[OAuth Providers<br/>Google + LinkedIn]
+        D3[Anthropic Claude API<br/>AI Chat Advisor]
     end
 
     subgraph "Monitoring & Analytics"
@@ -433,6 +515,7 @@ graph LR
 
     C2 --> D1
     C2 --> D2
+    C2 -.Planned.-> D3
 
     C1 --> E1
     C2 -.Future.-> E2
@@ -486,22 +569,35 @@ mindmap
         Edit Income Expenses
         Edit Assets
         Edit FIRE Goal
-    Future Features
-      AI Financial Advisor
-        Claude Integration
-        Chat Interface
-        Personalized Advice
-      Tax Optimization
-        Tax Calculations
-        Deductions
-        Strategies
-      Alerts System
-        Email Notifications
-        Tax Deadlines
-        Rebalancing Nudges
-      Net Worth Tracking
-        Historical Snapshots
-        Progress Charts
+    AI Financial Advisor Planned
+      Chat Interface
+        Message Input
+        Conversation History
+        Typing Indicators
+      Claude 3 5 Sonnet Integration
+        Contextual Responses
+        Financial Profile Context
+        Multi turn Conversations
+      Personalized Advice
+        FIRE Strategy Tips
+        Portfolio Rebalancing
+        Tax Optimization Ideas
+        Savings Recommendations
+      Conversation Storage
+        Message Persistence
+        History Retrieval
+        RLS Protected
+    Tax Optimization Planned
+      Tax Calculations
+      Deductions
+      Strategies
+    Alerts System Planned
+      Email Notifications
+      Tax Deadlines
+      Rebalancing Nudges
+    Net Worth Tracking Planned
+      Historical Snapshots
+      Progress Charts
 ```
 
 ## FIRE Calculation Flow
@@ -567,6 +663,180 @@ flowchart TD
 
 ---
 
+## AI Financial Advisor Chat Architecture (Planned)
+
+### Overview
+The AI Financial Advisor is a core feature that will provide personalized FIRE planning advice using Anthropic's Claude 3.5 Sonnet model. The chat system integrates the user's complete financial profile to deliver contextual, actionable recommendations.
+
+### Architecture Components
+
+```mermaid
+graph TB
+    subgraph "Frontend - Chat UI"
+        A1[Chat Page Component]
+        A2[Message List Display]
+        A3[Message Input Form]
+        A4[Typing Indicator]
+        A5[Message Bubble UI]
+    end
+
+    subgraph "API Layer"
+        B1[/api/chat/message<br/>POST Endpoint]
+        B2[Authentication Middleware]
+        B3[Context Builder]
+        B4[Response Streamer]
+    end
+
+    subgraph "Data Layer"
+        C1[Fetch User Profile]
+        C2[Fetch Chat History]
+        C3[Save Messages]
+        C4[RLS Policies]
+    end
+
+    subgraph "AI Integration"
+        D1[Anthropic SDK Client]
+        D2[Claude 3.5 Sonnet]
+        D3[System Prompt Builder]
+        D4[Token Counter]
+    end
+
+    A1 --> A2
+    A1 --> A3
+    A2 --> A5
+    A3 --> B1
+
+    B1 --> B2
+    B2 --> C1
+    B2 --> C2
+    B1 --> B3
+    B3 --> D3
+    D3 --> D1
+    D1 --> D2
+    D2 --> D1
+    D1 --> B4
+    B4 --> A4
+    B4 --> A5
+    B1 --> C3
+    C3 --> C4
+
+    style D2 fill:#9f6,stroke:#333,stroke-width:2px
+```
+
+### System Prompt Strategy
+The AI chat will use a dynamic system prompt that includes:
+```
+Role: AI Financial Advisor specializing in FIRE planning for Indians
+
+Context Provided:
+- User age, city, marital status, dependents
+- Monthly income, spouse income, total household income
+- Monthly expenses, savings rate
+- Current net worth breakdown (equity, debt, cash, real estate, other)
+- FIRE goal (target age, lifestyle type)
+- Required corpus, projected corpus, on-track status
+- Safe withdrawal rate, lifestyle inflation adjustment
+
+Instructions:
+- Provide actionable, India-specific financial advice
+- Reference actual user data in responses
+- Suggest specific optimizations for FIRE goal
+- Consider Indian tax laws and investment options
+- Recommend portfolio rebalancing if needed
+- Explain complex financial concepts simply
+- Always prioritize user's safety and well-being
+```
+
+### API Endpoint Design
+
+**POST `/api/chat/message`**
+
+Request:
+```typescript
+{
+  message: string          // User's question
+  conversationId?: string  // Optional: resume conversation
+}
+```
+
+Response (Streaming):
+```typescript
+{
+  messageId: string
+  content: string          // Streamed response chunks
+  role: "assistant"
+  metadata: {
+    model: "claude-3-5-sonnet-20241022"
+    tokensUsed: number
+    conversationId: string
+  }
+}
+```
+
+### Database Schema for Chat
+
+**`chat_messages` Table**
+```sql
+CREATE TABLE chat_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW(),
+  role TEXT CHECK (role IN ('user', 'assistant')) NOT NULL,
+  content TEXT NOT NULL,
+  metadata JSONB DEFAULT '{}'::jsonb,
+  conversation_id UUID DEFAULT gen_random_uuid()
+);
+
+-- RLS Policies
+ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own messages"
+  ON chat_messages FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own messages"
+  ON chat_messages FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+```
+
+### Message Flow
+1. **User sends message** → Chat UI captures input
+2. **API authentication** → Verify JWT token
+3. **Fetch context** → Get user profile + last 10 messages
+4. **Build prompt** → Combine system prompt + user data + conversation
+5. **Call Claude API** → Stream response with Anthropic SDK
+6. **Save messages** → Store both user message and AI response
+7. **Stream to UI** → Display response with typing animation
+
+### Conversation Context Management
+- **Context window**: Last 10 messages (20 total: 10 user + 10 assistant)
+- **Token management**: Trim context if exceeding 8K tokens
+- **Conversation ID**: Group messages by session
+- **Message ordering**: Chronological by `created_at`
+
+### Security Considerations
+- **RLS policies**: Users can only access their own chat history
+- **API rate limiting**: Prevent abuse (e.g., 50 messages/hour)
+- **Content filtering**: Sanitize user input, validate message length
+- **PII protection**: Never log sensitive financial data
+- **API key security**: Store `ANTHROPIC_API_KEY` in environment variables
+
+### Cost Optimization
+- **Model selection**: Claude 3.5 Sonnet (balanced performance/cost)
+- **Context pruning**: Limit conversation history to 10 messages
+- **Token counting**: Track usage per user for analytics
+- **Caching**: Cache common responses (e.g., "What is FIRE?")
+
+### Future Enhancements
+- **Voice input**: Speech-to-text for mobile users
+- **Multi-language**: Support Hindi, Tamil, Telugu
+- **PDF export**: Download conversation transcripts
+- **Suggested prompts**: Quick-start questions based on user profile
+- **Follow-up suggestions**: AI-generated next questions
+- **Conversation branching**: Multiple chat threads per user
+
+---
+
 ## Key Architectural Characteristics
 
 ### 1. **Architecture Pattern**
@@ -585,6 +855,7 @@ flowchart TD
 | Form Management | React Hook Form + Zod | 7.66 + 4.1 |
 | Charts | Recharts | 3.3.0 |
 | Animation | Framer Motion | 12.23 |
+| AI Integration | Anthropic Claude 3.5 Sonnet | Planned |
 
 ### 3. **Data Flow Pattern**
 1. **User Input** → React Hook Form
@@ -654,6 +925,13 @@ firecfo-mvp/
 │   │   ├── hooks/               # useDashboardData
 │   │   ├── utils/               # Dashboard calculations
 │   │   └── types.ts             # TypeScript types
+│   ├── chat/                    # AI Advisor Chat (Planned)
+│   │   ├── page.tsx             # Chat interface
+│   │   ├── components/          # Message bubbles, input
+│   │   └── hooks/               # useChatStream
+│   ├── api/                     # API Routes (Planned)
+│   │   └── chat/
+│   │       └── message/route.ts # Claude API integration
 │   ├── layout.tsx               # Root layout
 │   ├── page.tsx                 # Landing page
 │   └── globals.css              # Global styles
@@ -662,6 +940,7 @@ firecfo-mvp/
 │   └── auth/                    # Auth components
 ├── lib/
 │   ├── supabase.ts              # Supabase client singleton
+│   ├── anthropic.ts             # Anthropic client (Planned)
 │   └── utils.ts                 # Utilities
 ├── middleware.ts                # Auth routing middleware
 ├── next.config.ts               # Next.js config
@@ -679,8 +958,10 @@ firecfo-mvp/
 NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJxxx...
 
+# AI Chat Integration (Planned)
+ANTHROPIC_API_KEY=sk-ant-xxx      # Claude 3.5 Sonnet for AI Financial Advisor
+
 # Future Integrations
-ANTHROPIC_API_KEY=sk-ant-xxx      # Claude AI
 RESEND_API_KEY=re_xxxx             # Email notifications
 ```
 
@@ -691,6 +972,7 @@ RESEND_API_KEY=re_xxxx             # Email notifications
 FireCFO MVP is a **full-stack financial planning web application** built with:
 - **Modern React 19 + Next.js 16** for the frontend
 - **Supabase** as Backend-as-a-Service for database and authentication
+- **Anthropic Claude 3.5 Sonnet** for AI-powered financial advising (planned)
 - **TypeScript** for type safety across the entire stack
 - **Tailwind CSS** for responsive styling
 - **OAuth 2.0** for seamless authentication
@@ -698,11 +980,28 @@ FireCFO MVP is a **full-stack financial planning web application** built with:
 - **Row-Level Security** for data protection
 - **Serverless deployment** on Vercel
 
-The architecture is designed for rapid MVP development while maintaining scalability for future features like AI financial advising, tax optimization, and real-time notifications.
+### Key Features
+- **5-Step Onboarding Wizard**: Conversational UI to collect personal, financial, and FIRE goal data
+- **FIRE Dashboard**: Progress tracking, net worth visualization, and goal monitoring
+- **Settings & Editing**: User-friendly modals to update profile and recalculate FIRE metrics
+- **AI Financial Advisor** (planned): Personalized FIRE advice via Claude 3.5 Sonnet with full financial context
+- **Smart Calculations**: Dynamic Safe Withdrawal Rate, Lifestyle Inflation Adjustment, corpus projections
+
+The architecture is designed for rapid MVP development while maintaining scalability for future features like tax optimization, historical net worth tracking, and real-time notifications.
 
 ---
 
 **Diagram Created**: 2025-11-20
-**Version**: 1.0
+**Last Updated**: 2025-11-20
+**Version**: 2.0
 **Application**: FireCFO MVP
-**Architecture Type**: Monolithic SPA with BaaS
+**Architecture Type**: Monolithic SPA with BaaS + AI Integration
+
+**Changelog v2.0**:
+- Added AI Financial Advisor Chat architecture with Anthropic Claude 3.5 Sonnet
+- Included chat_messages database table schema and RLS policies
+- Added AI Chat data flow sequence diagram
+- Documented API endpoint design for `/api/chat/message`
+- Added system prompt strategy and context management
+- Included cost optimization and security considerations for AI chat
+- Updated feature module map to highlight AI chat as core planned feature
