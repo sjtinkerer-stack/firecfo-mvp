@@ -62,7 +62,7 @@ export function RenameConversationDialog({
     } catch (error) {
       if (error instanceof z.ZodError) {
         const fieldErrors: { title?: string } = {};
-        error.errors.forEach((err) => {
+        error.issues.forEach((err) => {
           if (err.path[0] === 'title') {
             fieldErrors.title = err.message;
           }

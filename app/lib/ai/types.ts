@@ -51,6 +51,7 @@ export interface SimulationChanges {
 }
 
 export interface SimulationResult {
+  scenario_name: string;
   current_plan: {
     required_corpus: number;
     projected_corpus: number;
@@ -72,7 +73,15 @@ export interface SimulationResult {
     monthly_savings_delta: number;
     success_probability_change: number;
   };
-  formatted_summary: string;
+  analysis: {
+    scenario_type: string;
+    current_gap: number;
+    new_gap: number;
+    gap_delta: number;
+    gap_delta_percent: number;
+    track_status_changed: boolean;
+  };
+  formatted_summary?: string;
 }
 
 export interface AssetAllocationRecommendation {

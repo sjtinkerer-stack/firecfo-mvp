@@ -82,7 +82,7 @@ function extractUserName(user: any): string {
     const capitalized = withSpaces
       .split(' ')[0] // Take first word only
       .toLowerCase()
-      .replace(/^\w/, (c) => c.toUpperCase());
+      .replace(/^\w/, (c: string) => c.toUpperCase());
 
     return capitalized || 'User';
   }

@@ -308,7 +308,7 @@ function runSimulation(
   }
 
   return {
-    scenario_name: scenarioName,
+    scenario_name: scenarioName || 'Unnamed Scenario',
     current_plan: {
       required_corpus: userData.requiredCorpus,
       projected_corpus: userData.projectedCorpusAtFire,
