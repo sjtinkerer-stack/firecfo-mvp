@@ -99,7 +99,9 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to send message');
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || `HTTP ${response.status}: Failed to send message`;
+        throw new Error(errorMessage);
       }
 
       // Handle streaming response
@@ -164,14 +166,15 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
       }
     } catch (error) {
       console.error('Error sending message:', error);
-      // Add error message
+      // Add error message with details
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       setMessages((prev) => [
         ...prev,
         {
           id: `error-${Date.now()}`,
           conversation_id: conversationId || '',
           role: 'assistant' as const,
-          content: '❌ Sorry, I encountered an error. Please try again.',
+          content: `❌ Sorry, I encountered an error: ${errorMessage}\n\nPlease try again or contact support if the issue persists.`,
           created_at: new Date().toISOString(),
         },
       ]);

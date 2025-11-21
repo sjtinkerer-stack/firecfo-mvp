@@ -14,7 +14,8 @@ function getOpenAIClient() {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     console.error('❌ OPENAI_API_KEY is not set in environment variables');
-    throw new Error('OPENAI_API_KEY is not configured. Please add it to .env.local and restart the server.');
+    console.error('🔍 Available env vars:', Object.keys(process.env).filter(k => k.includes('OPEN')));
+    throw new Error('OpenAI API key is not configured. Please set OPENAI_API_KEY in Vercel environment variables.');
   }
   console.log('✅ OpenAI API key found:', apiKey.substring(0, 20) + '...');
   return new OpenAI({
@@ -486,8 +487,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Chat API error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

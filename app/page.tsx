@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Flame, TrendingUp, Bot, Receipt, ArrowRight } from "lucide-react";
+import { Flame, TrendingUp, Target, Sparkles, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AnimatedBackground } from "@/components/ui/animated-background";
 import { LandingNav } from "@/components/ui/landing-nav";
@@ -34,16 +34,12 @@ export default function Home() {
             className="space-y-6"
           >
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-tight">
-              Your AI CFO for
+              India's First AI CFO for
               <br />
-              <span className="text-gradient-hero">Financial Freedom</span>
+              <span className="text-gradient-hero">Financial Independence</span>
             </h1>
             <p className="text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-              Take control of your financial future with personalized FIRE planning,
-              AI-powered insights, and smart tracking tools designed for Indians.
-            </p>
-            <p className="text-sm text-emerald-400 font-medium">
-              Built for Indians earning ₹15L-50L annually
+              Plan your early retirement with confidence. AI-powered CFO calculates your FIRE number, tracks progress automatically, and coaches you 24/7.
             </p>
           </motion.div>
 
@@ -86,7 +82,24 @@ export default function Home() {
             transition={{ duration: 0.6, delay: 0.6 }}
             className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl mt-8"
           >
-            {/* Track Net Worth */}
+            {/* FIRE Calculator */}
+            <motion.div
+              whileHover={{ scale: 1.05, y: -5 }}
+              transition={{ type: "spring", stiffness: 300 }}
+              className="group p-8 glass-card rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 border border-white/10"
+            >
+              <div className="inline-flex p-3 rounded-xl bg-gradient-to-br from-emerald-400/20 to-emerald-600/20 mb-4 group-hover:from-emerald-400/30 group-hover:to-emerald-600/30 transition-all">
+                <Target className="w-8 h-8 text-emerald-400" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+                FIRE Calculator
+              </h3>
+              <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+                Calculate your exact FIRE number using Indian inflation, realistic returns, and dynamic withdrawal rates based on your timeline.
+              </p>
+            </motion.div>
+
+            {/* What-If Scenario Engine */}
             <motion.div
               whileHover={{ scale: 1.05, y: -5 }}
               transition={{ type: "spring", stiffness: 300 }}
@@ -96,44 +109,27 @@ export default function Home() {
                 <TrendingUp className="w-8 h-8 text-emerald-400" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
-                Track Net Worth
+                What-If Scenario Engine
               </h3>
               <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-                Monitor your assets and watch your wealth grow over time with real-time insights
+                Test your FIRE strategy risk-free. Instantly see how saving ₹10K more, retiring at 50 vs 45, or lifestyle changes impact your retirement—powered by AI calculations.
               </p>
             </motion.div>
 
-            {/* AI Advisor */}
+            {/* 24/7 Financial Advisor */}
             <motion.div
               whileHover={{ scale: 1.05, y: -5 }}
               transition={{ type: "spring", stiffness: 300 }}
               className="group p-8 glass-card rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 border border-white/10"
             >
-              <div className="inline-flex p-3 rounded-xl bg-gradient-to-br from-purple-400/20 to-purple-600/20 mb-4 group-hover:from-purple-400/30 group-hover:to-purple-600/30 transition-all">
-                <Bot className="w-8 h-8 text-purple-400" />
+              <div className="inline-flex p-3 rounded-xl bg-gradient-to-br from-violet-400/20 to-violet-600/20 mb-4 group-hover:from-violet-400/30 group-hover:to-violet-600/30 transition-all">
+                <Sparkles className="w-8 h-8 text-violet-400" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
-                AI Advisor
+                24/7 Financial Advisor
               </h3>
               <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-                Get personalized financial guidance powered by Claude AI, available 24/7
-              </p>
-            </motion.div>
-
-            {/* Tax Optimization */}
-            <motion.div
-              whileHover={{ scale: 1.05, y: -5 }}
-              transition={{ type: "spring", stiffness: 300 }}
-              className="group p-8 glass-card rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 border border-white/10"
-            >
-              <div className="inline-flex p-3 rounded-xl bg-gradient-to-br from-blue-400/20 to-blue-600/20 mb-4 group-hover:from-blue-400/30 group-hover:to-blue-600/30 transition-all">
-                <Receipt className="w-8 h-8 text-blue-400" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
-                Tax Optimization
-              </h3>
-              <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-                Maximize your savings with intelligent Indian tax regime calculations
+                Get expert answers to all your FIRE questions. Ask about asset allocation, tax optimization, expense management—your AI CFO is always available.
               </p>
             </motion.div>
           </motion.div>

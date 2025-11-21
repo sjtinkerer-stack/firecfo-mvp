@@ -1,0 +1,790 @@
+{
+  "$schema": "https://tr.designtokens.org/format/",
+  "name": "FireCFO Design Tokens",
+  "version": "1.0.0",
+  "description": "Design tokens for FireCFO - AI-Powered FIRE Planning App",
+  "colors": {
+    "light": {
+      "background": {
+        "value": "oklch(1 0 0)",
+        "type": "color",
+        "description": "Page background - pure white"
+      },
+      "foreground": {
+        "value": "oklch(0.129 0.042 264.695)",
+        "type": "color",
+        "description": "Primary text color"
+      },
+      "card": {
+        "value": "oklch(1 0 0)",
+        "type": "color",
+        "description": "Card background"
+      },
+      "card-foreground": {
+        "value": "oklch(0.129 0.042 264.695)",
+        "type": "color",
+        "description": "Card text color"
+      },
+      "primary": {
+        "value": "oklch(0.208 0.042 265.755)",
+        "type": "color",
+        "description": "Primary brand color"
+      },
+      "primary-foreground": {
+        "value": "oklch(0.984 0.003 247.858)",
+        "type": "color",
+        "description": "Text on primary color"
+      },
+      "secondary": {
+        "value": "oklch(0.968 0.007 247.896)",
+        "type": "color",
+        "description": "Secondary brand color"
+      },
+      "secondary-foreground": {
+        "value": "oklch(0.208 0.042 265.755)",
+        "type": "color",
+        "description": "Text on secondary color"
+      },
+      "muted": {
+        "value": "oklch(0.968 0.007 247.896)",
+        "type": "color",
+        "description": "Muted background color"
+      },
+      "muted-foreground": {
+        "value": "oklch(0.554 0.046 257.417)",
+        "type": "color",
+        "description": "Muted text color"
+      },
+      "accent": {
+        "value": "oklch(0.968 0.007 247.896)",
+        "type": "color",
+        "description": "Accent color"
+      },
+      "accent-foreground": {
+        "value": "oklch(0.208 0.042 265.755)",
+        "type": "color",
+        "description": "Text on accent color"
+      },
+      "destructive": {
+        "value": "oklch(0.577 0.245 27.325)",
+        "type": "color",
+        "description": "Destructive action color (red)"
+      },
+      "border": {
+        "value": "oklch(0.929 0.013 255.508)",
+        "type": "color",
+        "description": "Border color"
+      },
+      "input": {
+        "value": "oklch(0.929 0.013 255.508)",
+        "type": "color",
+        "description": "Input border color"
+      },
+      "ring": {
+        "value": "oklch(0.704 0.04 256.788)",
+        "type": "color",
+        "description": "Focus ring color"
+      }
+    },
+    "dark": {
+      "background": {
+        "value": "oklch(0.129 0.042 264.695)",
+        "type": "color",
+        "description": "Page background - dark"
+      },
+      "foreground": {
+        "value": "oklch(0.984 0.003 247.858)",
+        "type": "color",
+        "description": "Primary text color - light"
+      },
+      "card": {
+        "value": "oklch(0.208 0.042 265.755)",
+        "type": "color",
+        "description": "Card background - dark"
+      },
+      "primary": {
+        "value": "oklch(0.929 0.013 255.508)",
+        "type": "color",
+        "description": "Primary brand color - light"
+      },
+      "secondary": {
+        "value": "oklch(0.279 0.041 260.031)",
+        "type": "color",
+        "description": "Secondary brand color - dark"
+      },
+      "muted": {
+        "value": "oklch(0.279 0.041 260.031)",
+        "type": "color",
+        "description": "Muted background - dark"
+      },
+      "destructive": {
+        "value": "oklch(0.704 0.191 22.216)",
+        "type": "color",
+        "description": "Destructive action color - lighter red"
+      },
+      "border": {
+        "value": "oklch(1 0 0 / 10%)",
+        "type": "color",
+        "description": "Border color - transparent white"
+      },
+      "input": {
+        "value": "oklch(1 0 0 / 15%)",
+        "type": "color",
+        "description": "Input border - transparent white"
+      }
+    },
+    "semantic": {
+      "success": {
+        "light": {
+          "value": "#059669",
+          "type": "color",
+          "description": "Success/on-track - emerald-600"
+        },
+        "dark": {
+          "value": "#34d399",
+          "type": "color",
+          "description": "Success/on-track - emerald-400"
+        }
+      },
+      "warning": {
+        "light": {
+          "value": "#d97706",
+          "type": "color",
+          "description": "Warning/behind-target - amber-600"
+        },
+        "dark": {
+          "value": "#fbbf24",
+          "type": "color",
+          "description": "Warning/behind-target - amber-400"
+        }
+      },
+      "error": {
+        "light": {
+          "value": "#dc2626",
+          "type": "color",
+          "description": "Error state - red-600"
+        },
+        "dark": {
+          "value": "#f87171",
+          "type": "color",
+          "description": "Error state - red-400"
+        }
+      },
+      "info": {
+        "light": {
+          "value": "#2563eb",
+          "type": "color",
+          "description": "Info state - blue-600"
+        },
+        "dark": {
+          "value": "#60a5fa",
+          "type": "color",
+          "description": "Info state - blue-400"
+        }
+      }
+    },
+    "themes": {
+      "emerald": {
+        "50": "#ecfdf5",
+        "100": "#d1fae5",
+        "200": "#a7f3d0",
+        "400": "#34d399",
+        "500": "#10b981",
+        "600": "#059669",
+        "700": "#047857",
+        "800": "#065f46",
+        "900": "#064e3b",
+        "950": "#022c22",
+        "description": "Primary theme - AI features, success states"
+      },
+      "violet": {
+        "50": "#f5f3ff",
+        "100": "#ede9fe",
+        "200": "#ddd6fe",
+        "400": "#a78bfa",
+        "500": "#8b5cf6",
+        "600": "#7c3aed",
+        "700": "#6d28d9",
+        "800": "#5b21b6",
+        "900": "#4c1d95",
+        "950": "#2e1065",
+        "description": "Savings metrics theme"
+      },
+      "orange": {
+        "50": "#fff7ed",
+        "100": "#ffedd5",
+        "200": "#fed7aa",
+        "400": "#fb923c",
+        "500": "#f97316",
+        "600": "#ea580c",
+        "700": "#c2410c",
+        "800": "#9a3412",
+        "900": "#7c2d12",
+        "950": "#431407",
+        "description": "Income metrics theme"
+      },
+      "blue": {
+        "50": "#eff6ff",
+        "100": "#dbeafe",
+        "200": "#bfdbfe",
+        "400": "#60a5fa",
+        "500": "#3b82f6",
+        "600": "#2563eb",
+        "700": "#1d4ed8",
+        "800": "#1e40af",
+        "900": "#1e3a8a",
+        "950": "#172554",
+        "description": "Net worth/corpus theme"
+      },
+      "amber": {
+        "50": "#fffbeb",
+        "100": "#fef3c7",
+        "200": "#fde68a",
+        "400": "#fbbf24",
+        "500": "#f59e0b",
+        "600": "#d97706",
+        "700": "#b45309",
+        "800": "#92400e",
+        "900": "#78350f",
+        "950": "#451a03",
+        "description": "Warning/expense theme"
+      }
+    },
+    "charts": {
+      "light": {
+        "chart-1": {
+          "value": "oklch(0.646 0.222 41.116)",
+          "type": "color",
+          "description": "Chart color 1 - Orange"
+        },
+        "chart-2": {
+          "value": "oklch(0.6 0.118 184.704)",
+          "type": "color",
+          "description": "Chart color 2 - Teal"
+        },
+        "chart-3": {
+          "value": "oklch(0.398 0.07 227.392)",
+          "type": "color",
+          "description": "Chart color 3 - Blue"
+        },
+        "chart-4": {
+          "value": "oklch(0.828 0.189 84.429)",
+          "type": "color",
+          "description": "Chart color 4 - Yellow"
+        },
+        "chart-5": {
+          "value": "oklch(0.769 0.188 70.08)",
+          "type": "color",
+          "description": "Chart color 5 - Green"
+        }
+      },
+      "dark": {
+        "chart-1": {
+          "value": "oklch(0.488 0.243 264.376)",
+          "type": "color",
+          "description": "Chart color 1 - Purple"
+        },
+        "chart-2": {
+          "value": "oklch(0.696 0.17 162.48)",
+          "type": "color",
+          "description": "Chart color 2 - Green"
+        },
+        "chart-3": {
+          "value": "oklch(0.769 0.188 70.08)",
+          "type": "color",
+          "description": "Chart color 3 - Yellow-Green"
+        },
+        "chart-4": {
+          "value": "oklch(0.627 0.265 303.9)",
+          "type": "color",
+          "description": "Chart color 4 - Magenta"
+        },
+        "chart-5": {
+          "value": "oklch(0.645 0.246 16.439)",
+          "type": "color",
+          "description": "Chart color 5 - Orange"
+        }
+      }
+    }
+  },
+  "typography": {
+    "fontFamily": {
+      "sans": {
+        "value": "var(--font-geist-sans), system-ui, -apple-system, sans-serif",
+        "type": "fontFamily",
+        "description": "Primary font - Geist Sans"
+      },
+      "mono": {
+        "value": "var(--font-geist-mono), 'SF Mono', Monaco, monospace",
+        "type": "fontFamily",
+        "description": "Monospace font - Geist Mono"
+      }
+    },
+    "fontSize": {
+      "xs": {
+        "value": "0.75rem",
+        "px": "12px",
+        "lineHeight": "1rem",
+        "type": "fontSize",
+        "description": "Extra small - metadata, timestamps"
+      },
+      "sm": {
+        "value": "0.875rem",
+        "px": "14px",
+        "lineHeight": "1.25rem",
+        "type": "fontSize",
+        "description": "Small - secondary text, labels"
+      },
+      "base": {
+        "value": "1rem",
+        "px": "16px",
+        "lineHeight": "1.5rem",
+        "type": "fontSize",
+        "description": "Base - body text"
+      },
+      "lg": {
+        "value": "1.125rem",
+        "px": "18px",
+        "lineHeight": "1.75rem",
+        "type": "fontSize",
+        "description": "Large - card subtitles"
+      },
+      "xl": {
+        "value": "1.25rem",
+        "px": "20px",
+        "lineHeight": "1.75rem",
+        "type": "fontSize",
+        "description": "Extra large - section headers"
+      },
+      "2xl": {
+        "value": "1.5rem",
+        "px": "24px",
+        "lineHeight": "2rem",
+        "type": "fontSize",
+        "description": "2X large - page titles"
+      },
+      "3xl": {
+        "value": "1.875rem",
+        "px": "30px",
+        "lineHeight": "2.25rem",
+        "type": "fontSize",
+        "description": "3X large - METRIC VALUES (primary use)"
+      },
+      "4xl": {
+        "value": "2.25rem",
+        "px": "36px",
+        "lineHeight": "2.5rem",
+        "type": "fontSize",
+        "description": "4X large - hero headings"
+      }
+    },
+    "fontWeight": {
+      "normal": {
+        "value": 400,
+        "type": "fontWeight",
+        "description": "Normal - body text"
+      },
+      "medium": {
+        "value": 500,
+        "type": "fontWeight",
+        "description": "Medium - labels, emphasized text"
+      },
+      "semibold": {
+        "value": 600,
+        "type": "fontWeight",
+        "description": "Semibold - subheadings, card titles"
+      },
+      "bold": {
+        "value": 700,
+        "type": "fontWeight",
+        "description": "Bold - headings, metric values, CTAs"
+      }
+    }
+  },
+  "spacing": {
+    "baseUnit": {
+      "value": "8px",
+      "type": "spacing",
+      "description": "Base spacing unit - all spacing derives from this"
+    },
+    "scale": {
+      "1": {
+        "value": "0.25rem",
+        "px": "4px",
+        "type": "spacing"
+      },
+      "2": {
+        "value": "0.5rem",
+        "px": "8px",
+        "type": "spacing"
+      },
+      "3": {
+        "value": "0.75rem",
+        "px": "12px",
+        "type": "spacing",
+        "description": "Pill gaps, tight spacing"
+      },
+      "4": {
+        "value": "1rem",
+        "px": "16px",
+        "type": "spacing",
+        "description": "Default component padding"
+      },
+      "6": {
+        "value": "1.5rem",
+        "px": "24px",
+        "type": "spacing",
+        "description": "STANDARD card padding and gap"
+      },
+      "8": {
+        "value": "2rem",
+        "px": "32px",
+        "type": "spacing",
+        "description": "Large card padding, banner padding"
+      },
+      "12": {
+        "value": "3rem",
+        "px": "48px",
+        "type": "spacing",
+        "description": "Section spacing"
+      },
+      "16": {
+        "value": "4rem",
+        "px": "64px",
+        "type": "spacing",
+        "description": "Page margins"
+      },
+      "24": {
+        "value": "6rem",
+        "px": "96px",
+        "type": "spacing",
+        "description": "Large section gaps"
+      }
+    }
+  },
+  "borderRadius": {
+    "sm": {
+      "value": "0.125rem",
+      "px": "2px",
+      "type": "borderRadius",
+      "description": "Subtle rounding"
+    },
+    "md": {
+      "value": "0.375rem",
+      "px": "6px",
+      "type": "borderRadius",
+      "description": "Buttons, inputs (STANDARD)"
+    },
+    "lg": {
+      "value": "0.5rem",
+      "px": "8px",
+      "type": "borderRadius",
+      "description": "Small cards"
+    },
+    "xl": {
+      "value": "0.75rem",
+      "px": "12px",
+      "type": "borderRadius",
+      "description": "Standard cards, modals (MOST COMMON)"
+    },
+    "2xl": {
+      "value": "1rem",
+      "px": "16px",
+      "type": "borderRadius",
+      "description": "Large cards, banners"
+    },
+    "full": {
+      "value": "9999px",
+      "type": "borderRadius",
+      "description": "Pills, avatars, badges"
+    }
+  },
+  "shadows": {
+    "xs": {
+      "value": "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+      "type": "boxShadow",
+      "description": "Input fields"
+    },
+    "sm": {
+      "value": "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+      "type": "boxShadow",
+      "description": "Small cards"
+    },
+    "md": {
+      "value": "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
+      "type": "boxShadow",
+      "description": "Raised elements"
+    },
+    "lg": {
+      "value": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
+      "type": "boxShadow",
+      "description": "Modals, hover cards"
+    },
+    "xl": {
+      "value": "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)",
+      "type": "boxShadow",
+      "description": "Floating elements"
+    },
+    "2xl": {
+      "value": "0 25px 50px -12px rgb(0 0 0 / 0.25)",
+      "type": "boxShadow",
+      "description": "Chat panel, popovers (HIGHEST ELEVATION)"
+    }
+  },
+  "breakpoints": {
+    "sm": {
+      "value": "640px",
+      "type": "breakpoint",
+      "description": "Tablet portrait"
+    },
+    "md": {
+      "value": "768px",
+      "type": "breakpoint",
+      "description": "Tablet landscape"
+    },
+    "lg": {
+      "value": "1024px",
+      "type": "breakpoint",
+      "description": "Desktop"
+    },
+    "xl": {
+      "value": "1280px",
+      "type": "breakpoint",
+      "description": "Large desktop"
+    },
+    "2xl": {
+      "value": "1536px",
+      "type": "breakpoint",
+      "description": "Extra large desktop"
+    }
+  },
+  "iconSizes": {
+    "sm": {
+      "value": "16px",
+      "type": "sizing",
+      "description": "Small icons - buttons, badges (h-4 w-4)"
+    },
+    "md": {
+      "value": "20px",
+      "type": "sizing",
+      "description": "Standard icons - inputs, nav (h-5 w-5)"
+    },
+    "lg": {
+      "value": "24px",
+      "type": "sizing",
+      "description": "Medium icons - metric cards (h-6 w-6) - STANDARD"
+    },
+    "xl": {
+      "value": "32px",
+      "type": "sizing",
+      "description": "Large icons - empty states (h-8 w-8)"
+    },
+    "2xl": {
+      "value": "48px",
+      "type": "sizing",
+      "description": "Extra large icons - hero sections (h-12 w-12)"
+    }
+  },
+  "components": {
+    "button": {
+      "height": {
+        "sm": {
+          "value": "32px",
+          "type": "sizing",
+          "description": "Small button (h-8)"
+        },
+        "default": {
+          "value": "36px",
+          "type": "sizing",
+          "description": "Default button (h-9)"
+        },
+        "lg": {
+          "value": "40px",
+          "type": "sizing",
+          "description": "Large button (h-10)"
+        }
+      },
+      "padding": {
+        "sm": {
+          "value": "12px",
+          "type": "spacing",
+          "description": "Small button horizontal padding (px-3)"
+        },
+        "default": {
+          "value": "16px",
+          "type": "spacing",
+          "description": "Default button horizontal padding (px-4)"
+        },
+        "lg": {
+          "value": "24px",
+          "type": "spacing",
+          "description": "Large button horizontal padding (px-6)"
+        }
+      },
+      "borderRadius": {
+        "value": "6px",
+        "type": "borderRadius",
+        "description": "Button border radius (rounded-md)"
+      }
+    },
+    "input": {
+      "height": {
+        "value": "36px",
+        "type": "sizing",
+        "description": "Input height (h-9)"
+      },
+      "padding": {
+        "horizontal": {
+          "value": "12px",
+          "type": "spacing",
+          "description": "Input horizontal padding (px-3)"
+        },
+        "vertical": {
+          "value": "4px",
+          "type": "spacing",
+          "description": "Input vertical padding (py-1)"
+        }
+      },
+      "borderRadius": {
+        "value": "6px",
+        "type": "borderRadius",
+        "description": "Input border radius (rounded-md)"
+      },
+      "focusRing": {
+        "width": {
+          "value": "3px",
+          "type": "borderWidth",
+          "description": "Focus ring width"
+        },
+        "opacity": {
+          "value": "50%",
+          "type": "opacity",
+          "description": "Focus ring opacity"
+        }
+      }
+    },
+    "card": {
+      "padding": {
+        "value": "24px",
+        "type": "spacing",
+        "description": "Standard card padding (p-6)"
+      },
+      "gap": {
+        "value": "24px",
+        "type": "spacing",
+        "description": "Gap between card sections (gap-6)"
+      },
+      "borderRadius": {
+        "value": "12px",
+        "type": "borderRadius",
+        "description": "Card border radius (rounded-xl)"
+      }
+    },
+    "metricCard": {
+      "iconSize": {
+        "value": "48px",
+        "type": "sizing",
+        "description": "Metric card icon container (h-12 w-12)"
+      },
+      "valueSize": {
+        "value": "30px",
+        "type": "fontSize",
+        "description": "Metric value font size (text-3xl)"
+      },
+      "borderWidth": {
+        "value": "2px",
+        "type": "borderWidth",
+        "description": "Metric card border (border-2)"
+      }
+    },
+    "modal": {
+      "maxWidth": {
+        "value": "512px",
+        "type": "sizing",
+        "description": "Modal max width (sm:max-w-lg)"
+      },
+      "padding": {
+        "value": "24px",
+        "type": "spacing",
+        "description": "Modal padding (p-6)"
+      },
+      "borderRadius": {
+        "value": "8px",
+        "type": "borderRadius",
+        "description": "Modal border radius (rounded-lg)"
+      }
+    }
+  },
+  "animation": {
+    "duration": {
+      "fast": {
+        "value": "150ms",
+        "type": "duration",
+        "description": "Fast transitions - hover states"
+      },
+      "normal": {
+        "value": "300ms",
+        "type": "duration",
+        "description": "Normal transitions - standard animations"
+      },
+      "slow": {
+        "value": "500ms",
+        "type": "duration",
+        "description": "Slow transitions - page transitions"
+      }
+    },
+    "easing": {
+      "default": {
+        "value": "cubic-bezier(0.4, 0, 0.2, 1)",
+        "type": "cubicBezier",
+        "description": "Default easing function"
+      },
+      "in": {
+        "value": "cubic-bezier(0.4, 0, 1, 1)",
+        "type": "cubicBezier",
+        "description": "Ease in"
+      },
+      "out": {
+        "value": "cubic-bezier(0, 0, 0.2, 1)",
+        "type": "cubicBezier",
+        "description": "Ease out"
+      }
+    }
+  },
+  "accessibility": {
+    "contrastRatios": {
+      "normalText": {
+        "value": "4.5:1",
+        "type": "contrastRatio",
+        "description": "WCAG AA minimum for normal text"
+      },
+      "largeText": {
+        "value": "3:1",
+        "type": "contrastRatio",
+        "description": "WCAG AA minimum for large text (18pt+/14pt+ bold)"
+      },
+      "uiComponents": {
+        "value": "3:1",
+        "type": "contrastRatio",
+        "description": "WCAG AA minimum for UI components"
+      }
+    },
+    "focusRing": {
+      "width": {
+        "value": "3px",
+        "type": "borderWidth",
+        "description": "Minimum focus ring width for visibility"
+      },
+      "offset": {
+        "value": "2px",
+        "type": "spacing",
+        "description": "Focus ring offset for clarity"
+      }
+    },
+    "minimumTouchTarget": {
+      "value": "44px",
+      "type": "sizing",
+      "description": "Minimum touch target size (WCAG 2.5.5)"
+    }
+  }
+}
