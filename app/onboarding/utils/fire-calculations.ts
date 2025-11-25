@@ -173,11 +173,14 @@ export function calculateFireMetrics(
   currentNetWorth: number,
   monthlySavings: number,
   householdIncome: number,
-  LIA: number
+  LIA: number,
+  customPreReturnRate?: number // NEW: Optional weighted portfolio return (e.g., 11.5 for 11.5%)
 ): FireMetrics {
   // Constants
   const INFLATION_RATE = 0.06 // 6% annual inflation
-  const PRE_RETURN_RATE = 0.12 // 12% pre-retirement returns
+  const PRE_RETURN_RATE = customPreReturnRate
+    ? customPreReturnRate / 100 // Convert percentage to decimal (e.g., 11.5% -> 0.115)
+    : 0.12 // Default 12% pre-retirement returns if not provided
 
   // Calculate dynamic Safe Withdrawal Rate based on retirement duration
   // Earlier retirement = longer duration = more conservative (lower) SWR needed

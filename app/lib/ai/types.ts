@@ -127,6 +127,10 @@ export interface ChatMessage {
   tokens_used?: number;
   estimated_cost?: number;
   created_at: string;
+  // Feedback fields
+  user_feedback?: 'helpful' | 'unhelpful' | null;
+  feedback_text?: string | null;
+  feedback_timestamp?: string | null;
 }
 
 export interface ChatConversation {

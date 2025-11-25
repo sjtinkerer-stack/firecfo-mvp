@@ -11,7 +11,7 @@ import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { DashboardOverview } from './components/dashboard-overview';
 import { FloatingChatButton } from './components/chat/floating-chat-button';
-import { LogOut, Settings } from 'lucide-react';
+import { LogOut, Settings, TrendingUp } from 'lucide-react';
 import type { User, AuthChangeEvent, Session } from '@supabase/supabase-js';
 
 // Helper function to extract display name from email
@@ -139,6 +139,14 @@ export default function DashboardPage() {
             </p>
           </div>
           <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={() => router.push('/dashboard/assets')}
+              className="border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-900/20"
+            >
+              <TrendingUp className="mr-2 h-4 w-4" />
+              Asset Hub
+            </Button>
             <Button variant="outline" onClick={() => router.push('/dashboard/settings')}>
               <Settings className="mr-2 h-4 w-4" />
               Settings

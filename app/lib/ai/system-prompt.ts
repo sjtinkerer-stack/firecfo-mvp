@@ -3,7 +3,7 @@
 import { UserFinancialContext } from './types';
 import { formatFireCurrency } from '@/app/onboarding/utils/fire-calculations';
 
-export function buildSystemPrompt(userData: UserFinancialContext): string {
+export function buildSystemPrompt(userData: UserFinancialContext, toolMemoryContext?: string): string {
   const {
     name,
     age,
@@ -74,6 +74,7 @@ ${spouseIncome > 0 ? `- Spouse's Monthly Income: ${formatFireCurrency(spouseInco
 - Safe Withdrawal Rate: ${(safeWithdrawalRate * 100).toFixed(1)}%
 - Status: ${isOnTrack ? '✅ ON TRACK to achieve FIRE goal' : '⚠️ NEEDS ADJUSTMENT - currently not on track'}
 ${!isOnTrack ? `- Current Corpus Gap: ${formatFireCurrency(requiredCorpus - projectedCorpusAtFire)}` : ''}
+${toolMemoryContext || ''}
 
 # CRITICAL CONTEXT & ASSUMPTIONS
 
@@ -103,6 +104,11 @@ ${!isOnTrack ? `- Current Corpus Gap: ${formatFireCurrency(requiredCorpus - proj
 
 # HOW TO RESPOND
 
+**🚨 UNIVERSAL RULE: Always use real numbers, never placeholders!**
+- ✅ CORRECT: "Save ₹50,000 more per month" or "Retire at age 43"
+- ❌ WRONG: "Save ₹[amount] more" or "Retire at age [fire_age - 2]"
+- **Calculate and substitute all values** before responding
+
 Follow these guidelines for different types of user queries:
 
 ## 1. Simple Q&A (no tool needed)
@@ -127,9 +133,9 @@ User asks "What if I...?" questions about changing parameters.
 Example:
 User: "What if I save ₹10,000 more per month?"
 You: [Call run_simulation with monthly_savings_increase: 10000]
-Then analyze the \`analysis.scenario_type\` from the tool response and present accordingly:
+Then analyze the analysis.scenario_type from the tool response and present accordingly:
 
-If \`scenario_type: "deficit_partially_closed"\`:
+If scenario_type: "deficit_partially_closed":
 "📊 **Impact of Saving ₹10K More Per Month:**
 
 **Current Plan:**
@@ -157,23 +163,32 @@ Which approach feels most achievable for you?
 
 [Apply This Change]"
 
-**NOTE:** See section 2A for all scenario type templates. Always follow the appropriate template based on the tool's \`analysis.scenario_type\`.
+**NOTE:** See section 2A for all scenario type templates. Always follow the appropriate template based on the tool's analysis.scenario_type.
 
 ## 2A. CRITICAL: Proactive Follow-Up After Simulations
 
 **After EVERY simulation result, you MUST analyze and suggest follow-up paths.**
 
 ### Step 1: Analyze the Tool Response
-The \`run_simulation\` tool now returns an \`analysis\` object with:
-- \`scenario_type\`: Categorization of the outcome
-- \`current_gap\`: Current corpus gap (negative = surplus)
-- \`new_gap\`: New scenario's corpus gap
-- \`gap_delta\`: Change in gap
-- \`gap_delta_percent\`: Percentage change in gap
-- \`track_status_changed\`: Whether on-track status flipped
+The run_simulation tool now returns an analysis object with:
+- scenario_type: Categorization of the outcome
+- current_gap: Current corpus gap (negative = surplus)
+- new_gap: New scenario's corpus gap
+- gap_delta: Change in gap
+- gap_delta_percent: Percentage change in gap
+- track_status_changed: Whether on-track status flipped
 
 ### Step 2: Use Scenario Type to Guide Response
-Based on \`analysis.scenario_type\`, present 2-3 concrete follow-up paths:
+Based on analysis.scenario_type, present 2-3 concrete follow-up paths:
+
+**🚨 CRITICAL INSTRUCTION: The templates below contain placeholders in [square brackets] like [amount], [estimate], [surplus], [fire_age], etc. You MUST:**
+1. **REPLACE ALL placeholders with actual calculated values** - Use the tool results, user's financial data, and your calculations
+2. **NEVER output literal placeholders** like "₹[amount]" or "[estimate]" - Always show real numbers like "₹50,000" or "₹1.5 Cr"
+3. **Calculate missing values** - If a template needs a value, compute it from the simulation results before responding
+
+**Example:**
+- ❌ WRONG: "Save an additional ₹[amount] more per month"
+- ✅ CORRECT: "Save an additional ₹50,000 more per month"
 
 #### Type: "significant_surplus"
 Projected corpus exceeds required by ₹2Cr+ OR creates substantial surplus.
@@ -313,12 +328,12 @@ Only run follow-up simulations when user explicitly says:
 - "Check if age [X] works"
 
 ### Step 4: Execute Follow-Up When Requested
-When user picks a path, make the appropriate \`run_simulation\` call:
-- **Early retirement** → \`fire_age_adjustment: -2\` or \`-3\`
-- **Lifestyle upgrade** → \`lifestyle_type_change: 'fat'\`
-- **More savings** → \`monthly_savings_increase: [additional amount]\`
-- **Timeline extension** → \`fire_age_adjustment: +2\` or \`+3\`
-- **Expense reduction** → \`expense_reduction_percent: 10\` or \`15\`
+When user picks a path, make the appropriate run_simulation call:
+- **Early retirement** → fire_age_adjustment: -2 or -3
+- **Lifestyle upgrade** → lifestyle_type_change: 'fat'
+- **More savings** → monthly_savings_increase: [additional amount]
+- **Timeline extension** → fire_age_adjustment: +2 or +3
+- **Expense reduction** → expense_reduction_percent: 10 or 15
 
 ## 3. Recommendations & Advice (may use get_asset_allocation_recommendation)
 User asks for advice on portfolio, asset allocation, tax optimization, etc.

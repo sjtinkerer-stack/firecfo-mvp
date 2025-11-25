@@ -91,6 +91,86 @@ function extractUserName(user: any): string {
   return 'User';
 }
 
+// Helper function to extract recent tool results from conversation history
+// for context memory (helps AI remember previous simulations)
+function getRecentToolResults(
+  history: Array<{ role: string; content: string; tool_calls?: unknown; created_at?: string }> | null
+): string {
+  if (!history || history.length === 0) {
+    return '';
+  }
+
+  // Extract messages with tool calls (last 5 tool executions)
+  const toolMessages = history
+    .filter((msg) => msg.role === 'assistant' && msg.tool_calls && msg.tool_calls.length > 0)
+    .slice(-5); // Last 5 tool executions
+
+  if (toolMessages.length === 0) {
+    return '';
+  }
+
+  // Build tool memory context
+  let toolMemoryContext = '\n\n# RECENT SIMULATIONS & CALCULATIONS\n\n';
+  toolMemoryContext += 'You recently ran these simulations in this conversation:\n\n';
+
+  toolMessages.forEach((msg, index) => {
+    const toolCalls = msg.tool_calls;
+    if (!Array.isArray(toolCalls)) return;
+
+    toolCalls.forEach((toolCall: unknown) => {
+      try {
+        // Type guard for tool call structure
+        if (!toolCall || typeof toolCall !== 'object') return;
+        const tc = toolCall as Record<string, unknown>;
+
+        const functionName = (tc.function as Record<string, unknown>)?.name || tc.name;
+        const functionArgs = JSON.parse(
+          String((tc.function as Record<string, unknown>)?.arguments || tc.arguments || '{}')
+        );
+
+        // Format based on tool type
+        if (functionName === 'run_simulation') {
+          const changes = functionArgs.changes || {};
+          const scenarioName = functionArgs.scenario_name || 'Simulation';
+
+          const changesSummary = [];
+          if (changes.monthly_savings_increase) {
+            changesSummary.push(`₹${Math.abs(changes.monthly_savings_increase / 100000).toFixed(2)}L ${changes.monthly_savings_increase > 0 ? 'more' : 'less'} savings/month`);
+          }
+          if (changes.fire_age_adjustment) {
+            changesSummary.push(`Retire ${changes.fire_age_adjustment > 0 ? changes.fire_age_adjustment + ' years later' : Math.abs(changes.fire_age_adjustment) + ' years earlier'}`);
+          }
+          if (changes.expense_reduction_percent) {
+            changesSummary.push(`${changes.expense_reduction_percent}% expense reduction`);
+          }
+          if (changes.income_increase) {
+            changesSummary.push(`₹${(changes.income_increase / 100000).toFixed(2)}L income increase`);
+          }
+          if (changes.asset_boost) {
+            changesSummary.push(`₹${(changes.asset_boost / 10000000).toFixed(2)} Cr one-time boost`);
+          }
+          if (changes.lifestyle_type_change) {
+            changesSummary.push(`Switch to ${changes.lifestyle_type_change} FIRE`);
+          }
+
+          toolMemoryContext += `${index + 1}. **${scenarioName}**: ${changesSummary.join(', ')}\n`;
+        } else if (functionName === 'calculate_fire_metrics') {
+          toolMemoryContext += `${index + 1}. **FIRE Calculation**: Age ${functionArgs.age}, Target age ${functionArgs.fire_target_age}\n`;
+        } else if (functionName === 'get_asset_allocation_recommendation') {
+          toolMemoryContext += `${index + 1}. **Asset Allocation Check**\n`;
+        }
+      } catch (e) {
+        // Skip malformed tool calls
+        console.error('Error parsing tool call:', e);
+      }
+    });
+  });
+
+  toolMemoryContext += '\n**IMPORTANT**: When the user references "option 1", "option 2", etc., or says just "1", "2", they are referring to the options YOU provided in response to the MOST RECENT simulation above. Use the parameters from that simulation for any follow-up calculations, NOT the user\'s original plan from their profile.\n';
+
+  return toolMemoryContext;
+}
+
 // Constants for cost optimization
 const SIMPLE_QUERY_MODEL = 'gpt-4o-mini'; // Cheaper for simple queries
 const COMPLEX_QUERY_MODEL = 'gpt-4o'; // Better for complex reasoning
@@ -197,20 +277,26 @@ export async function POST(request: NextRequest) {
       activeConversationId = newConversation.id;
     }
 
-    // Fetch conversation history (last 20 messages for context)
+    // Fetch conversation history (last 25 messages for context, including tool calls)
     const { data: history, error: historyError } = await supabase
       .from('chat_messages')
-      .select('role, content')
+      .select('role, content, tool_calls, created_at')
       .eq('conversation_id', activeConversationId)
       .order('created_at', { ascending: true })
-      .limit(20);
+      .limit(25);
 
     if (historyError) {
       console.error('Error fetching history:', historyError);
     }
 
+    // Extract tool memory from conversation history for context
+    const toolMemoryContext = getRecentToolResults(history);
+    if (toolMemoryContext) {
+      console.log('🧠 Tool memory context added to prompt');
+    }
+
     // Build messages array for OpenAI
-    const systemPrompt = buildSystemPrompt(userData);
+    const systemPrompt = buildSystemPrompt(userData, toolMemoryContext);
 
     const messages: OpenAI.ChatCompletionMessageParam[] = [
       {
