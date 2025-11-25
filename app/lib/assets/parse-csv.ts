@@ -209,7 +209,7 @@ export async function parseCSV(
           reject(error);
         }
       },
-      error: (error) => {
+      error: (error: any) => {
         reject(
           new AssetParsingError(
             `Failed to parse CSV: ${error.message}`,

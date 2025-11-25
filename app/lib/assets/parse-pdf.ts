@@ -14,7 +14,8 @@ const openai = new OpenAI({
 async function extractTextFromPDF(pdfBuffer: ArrayBuffer): Promise<string> {
   try {
     // Dynamic import for CommonJS module compatibility
-    const pdfParse = (await import('pdf-parse')).default;
+    const pdfParseModule = await import('pdf-parse');
+    const pdfParse = (pdfParseModule as any).default || pdfParseModule;
     const data = await pdfParse(Buffer.from(pdfBuffer));
     return data.text;
   } catch (error) {
@@ -264,7 +265,8 @@ export async function validatePDF(
 }> {
   try {
     // Dynamic import for CommonJS module compatibility
-    const pdfParse = (await import('pdf-parse')).default;
+    const pdfParseModule = await import('pdf-parse');
+    const pdfParse = (pdfParseModule as any).default || pdfParseModule;
     const data = await pdfParse(Buffer.from(pdfBuffer));
 
     const hasText = data.text && data.text.trim().length > 100; // At least 100 chars
@@ -300,7 +302,8 @@ export async function parsePDFMultiPage(
 ): Promise<RawAsset[]> {
   try {
     // Dynamic import for CommonJS module compatibility
-    const pdfParse = (await import('pdf-parse')).default;
+    const pdfParseModule = await import('pdf-parse');
+    const pdfParse = (pdfParseModule as any).default || pdfParseModule;
     const data = await pdfParse(Buffer.from(pdfBuffer));
     const pageCount = Math.min(data.numpages, maxPages);
 

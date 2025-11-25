@@ -102,7 +102,7 @@ function getRecentToolResults(
 
   // Extract messages with tool calls (last 5 tool executions)
   const toolMessages = history
-    .filter((msg) => msg.role === 'assistant' && msg.tool_calls && msg.tool_calls.length > 0)
+    .filter((msg) => msg.role === 'assistant' && msg.tool_calls && Array.isArray(msg.tool_calls) && msg.tool_calls.length > 0)
     .slice(-5); // Last 5 tool executions
 
   if (toolMessages.length === 0) {

@@ -118,6 +118,15 @@ export interface Asset {
   updated_at: string;
 }
 
+// Minimal asset fields needed for duplicate detection
+export interface AssetForDuplicateCheck {
+  id: string;
+  asset_name: string;
+  current_value: number;
+  source_file?: string;
+  snapshot_id?: string;
+}
+
 // File upload result
 export interface FileUploadResult {
   file_name: string;

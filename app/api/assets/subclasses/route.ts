@@ -56,6 +56,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Group sub-classes by asset class for easier UI rendering
+    type SubclassArray = NonNullable<typeof subclasses>;
     const grouped = (subclasses || []).reduce(
       (acc, subclass) => {
         const assetClass = subclass.asset_class as string;
@@ -65,13 +66,13 @@ export async function GET(request: NextRequest) {
         acc[assetClass].push(subclass);
         return acc;
       },
-      {} as Record<string, typeof subclasses>
+      {} as Record<string, SubclassArray>
     );
 
     // Calculate summary statistics
     const summary = {
       total_subclasses: subclasses?.length || 0,
-      by_class: Object.entries(grouped).map(([assetClass, items]) => ({
+      by_class: (Object.entries(grouped) as [string, SubclassArray][]).map(([assetClass, items]) => ({
         asset_class: assetClass,
         count: items.length,
       })),

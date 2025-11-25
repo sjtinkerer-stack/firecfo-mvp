@@ -3,6 +3,7 @@
 import * as fuzzball from 'fuzzball';
 import {
   Asset,
+  AssetForDuplicateCheck,
   ClassifiedAsset,
   ReviewAsset,
   DuplicateMatch,
@@ -191,7 +192,7 @@ function getMatchType(
  */
 export function detectDuplicatesForAsset(
   newAsset: ClassifiedAsset,
-  existingAssets: Asset[],
+  existingAssets: AssetForDuplicateCheck[],
   config: DuplicateDetectionConfig = DEFAULT_CONFIG
 ): DuplicateMatch[] {
   const matches: DuplicateMatch[] = [];
@@ -246,7 +247,7 @@ export function detectDuplicatesForAsset(
  */
 export function detectDuplicatesBatch(
   newAssets: ClassifiedAsset[],
-  existingAssets: Asset[],
+  existingAssets: AssetForDuplicateCheck[],
   config: DuplicateDetectionConfig = DEFAULT_CONFIG
 ): ReviewAsset[] {
   const reviewAssets: ReviewAsset[] = [];

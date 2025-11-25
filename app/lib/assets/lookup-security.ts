@@ -243,7 +243,7 @@ export async function lookupByTicker(
     const equityDetails = await nse.getEquityDetails(ticker);
 
     if (equityDetails && equityDetails.info) {
-      const info = equityDetails.info;
+      const info = equityDetails.info as any; // Type assertion for external API response
       const securityName = info.companyName || info.symbol || ticker;
       const industry = info.industry || '';
 
@@ -277,7 +277,7 @@ export async function lookupByTicker(
 
     // Try to fetch as index
     try {
-      const indexDetails = await nse.getIndexDetails(ticker);
+      const indexDetails = await (nse as any).getIndexDetails(ticker);
       if (indexDetails) {
         return {
           found: true,

@@ -87,7 +87,7 @@ export function ChatMessages({ messages, isLoading }: ChatMessagesProps) {
       // Rollback optimistic update on error
       const message = messages.find((m) => m.id === messageId);
       if (message?.user_feedback) {
-        setFeedbackState((prev) => ({ ...prev, [messageId]: message.user_feedback }));
+        setFeedbackState((prev) => ({ ...prev, [messageId]: message.user_feedback as 'helpful' | 'unhelpful' | null }));
       }
       toast.error('Failed to clear feedback');
     }
