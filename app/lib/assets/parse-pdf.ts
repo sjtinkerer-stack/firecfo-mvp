@@ -38,13 +38,10 @@ async function convertPDFPagesToImages(
     console.log('🖼️  Converting PDF pages to images...');
 
     const { pdfToPng } = await import('pdf-to-png-converter');
-    const buffer = Buffer.from(pdfBuffer);
 
     // Convert PDF to PNG images
-    const pngPages = await pdfToPng(buffer, {
-      strictPagesToProcess: false, // Process pages even if some fail
+    const pngPages = await pdfToPng(pdfBuffer, {
       viewportScale: 2.0, // Higher scale = better quality for financial tables
-      outputFolder: undefined, // Don't save to disk
     });
 
     const totalPages = pngPages.length;
@@ -56,6 +53,10 @@ async function convertPDFPagesToImages(
     const imageDataUrls: string[] = [];
     for (let i = 0; i < pagesToProcess; i++) {
       const page = pngPages[i];
+      if (!page.content) {
+        console.warn(`  ⚠ Skipping page ${i + 1} - no content available`);
+        continue;
+      }
       const base64Image = page.content.toString('base64');
       const dataUrl = `data:image/png;base64,${base64Image}`;
       imageDataUrls.push(dataUrl);
@@ -530,7 +531,7 @@ export async function estimatePDFParsingCost(pdfBuffer: ArrayBuffer): Promise<{
  */
 export async function validatePDF(
   pdfBuffer: ArrayBuffer,
-  fileName: string
+  _fileName: string
 ): Promise<{
   isValid: boolean;
   hasText: boolean;
@@ -580,10 +581,10 @@ export async function parsePDFMultiPage(
     const pdfParseModule = await import('pdf-parse');
     const pdfParse = (pdfParseModule as any).default || pdfParseModule;
     const data = await pdfParse(Buffer.from(pdfBuffer));
-    const pageCount = Math.min(data.numpages, maxPages);
+    const _pageCount = Math.min(data.numpages, maxPages);
 
     // For now, just use full text extraction
-    // In production, you'd parse page by page
+    // In production, you'd parse page by page (using _pageCount)
     return await parsePDF(pdfBuffer, fileName);
   } catch (error) {
     throw new AssetParsingError(
