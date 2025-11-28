@@ -14,3 +14,6 @@ export * from './classify-asset';
 
 // Duplicate Detection
 export * from './detect-duplicates';
+
+// Statement Date Utilities
+export * from './statement-date-utils';

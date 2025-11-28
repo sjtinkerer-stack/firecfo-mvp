@@ -10,6 +10,8 @@ import {
   classifyAssetsBatch,
   detectDuplicatesBatch,
   getFileParsingSummary,
+  groupFilesByStatementDate,
+  type AssetSnapshot,
 } from '@/app/lib/assets';
 
 export async function POST(request: NextRequest) {
@@ -113,22 +115,38 @@ export async function POST(request: NextRequest) {
     }
 
     // 5. Get sub-class mappings from database
-    const { data: subclassMappings, error: mappingsError } = await supabase
+    let { data: subclassMappings, error: mappingsError } = await supabase
       .from('asset_subclass_mapping')
       .select('*')
       .eq('is_active', true)
       .order('sort_order');
 
+    // If no active mappings found, try without is_active filter (for backwards compatibility)
+    if (!subclassMappings || subclassMappings.length === 0) {
+      console.warn('⚠️ No active sub-class mappings found, trying without is_active filter...');
+      const fallbackResult = await supabase
+        .from('asset_subclass_mapping')
+        .select('*')
+        .order('sort_order');
+
+      subclassMappings = fallbackResult.data;
+      mappingsError = fallbackResult.error;
+    }
+
     if (mappingsError || !subclassMappings || subclassMappings.length === 0) {
-      console.error('Failed to fetch sub-class mappings:', mappingsError);
+      console.error('❌ Failed to fetch sub-class mappings:', mappingsError);
+      console.error('   This usually means the asset_subclass_mapping table is empty.');
+      console.error('   Please run the add-asset-tracking-system.sql migration to seed the data.');
       return NextResponse.json(
         {
           success: false,
-          error: 'Failed to load asset classification data',
+          error: 'Failed to load asset classification data. Please ensure the database is properly seeded.',
         },
         { status: 500 }
       );
     }
+
+    console.log(`✅ Loaded ${subclassMappings.length} asset sub-class mappings`);
 
     // 6. Classify assets using AI (with progress logging)
     console.log(`🤖 Classifying ${allRawAssets.length} assets with AI...`);
@@ -169,23 +187,58 @@ export async function POST(request: NextRequest) {
       // Don't fail the request, just skip duplicate detection
     }
 
-    // 8. Detect duplicates
+    // 8. Detect duplicates (uses DEFAULT_CONFIG with nameWeight: 0.9, valueWeight: 0.1)
     console.log(`🔍 Checking for duplicates against ${existingAssets?.length || 0} existing assets...`);
     const reviewAssets = detectDuplicatesBatch(
       classifiedAssets,
-      existingAssets || [],
-      {
-        similarityThreshold: 85, // 85% similarity to flag as duplicate
-        valueTolerancePercentage: 5, // 5% value difference is acceptable
-        nameWeight: 0.7,
-        valueWeight: 0.3,
-      }
+      existingAssets || []
+      // Using DEFAULT_CONFIG: 85% threshold, nameWeight: 0.9, valueWeight: 0.1
     );
 
     const duplicateCount = reviewAssets.filter((a) => a.is_duplicate).length;
     console.log(`⚠️  Found ${duplicateCount} potential duplicates`);
 
-    // 9. Log upload to database for monitoring
+    // 9. Fetch user's existing snapshots for statement date matching
+    const { data: userSnapshots, error: snapshotsError} = await supabase
+      .from('asset_snapshots')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('snapshot_date', { ascending: false }) // Use snapshot_date instead of statement_date for compatibility
+      .limit(50); // Get recent snapshots only
+
+    if (snapshotsError) {
+      console.error('Failed to fetch user snapshots:', snapshotsError);
+      // Don't fail the request, just skip snapshot matching
+    }
+
+    // 10. Group files by statement date and match against existing snapshots
+    let fileGroups: any[] = [];
+    let filesWithDates: any[] = [];
+    try {
+      filesWithDates = parseResults.results
+        .filter((r) => r.success && r.parsed_statement_date)
+        .map((r) => ({
+          filename: r.file.name,
+          parsed_date: {
+            date: r.parsed_statement_date!,
+            confidence: r.statement_date_confidence!,
+            source: r.statement_date_source!,
+          },
+        }));
+
+      fileGroups = groupFilesByStatementDate(
+        filesWithDates,
+        (userSnapshots as AssetSnapshot[]) || []
+      );
+    } catch (groupError) {
+      console.error('Failed to group files by statement date:', groupError);
+      // Continue without file grouping - will create new snapshot
+      fileGroups = [];
+    }
+
+    console.log(`📊 Grouped ${filesWithDates.length} files into ${fileGroups.length} statement period(s)`);
+
+    // 11. Log upload to database for monitoring
     const processingTime = Date.now() - startTime;
     const fileNames = files.map((f) => f.name).join(', ');
     const fileSizes = files.reduce((sum, f) => sum + f.size, 0);
@@ -201,7 +254,7 @@ export async function POST(request: NextRequest) {
       completed_at: new Date().toISOString(),
     });
 
-    // 10. Return results for user review
+    // 12. Return results for user review (with snapshot matching info)
     const summary = getFileParsingSummary(parseResults.results);
 
     return NextResponse.json({
@@ -216,6 +269,23 @@ export async function POST(request: NextRequest) {
         processing_time_ms: processingTime,
         file_details: summary.fileDetails,
       },
+      // NEW: Statement date matching information
+      statement_date_groups: fileGroups.map((group: any) => ({
+        statement_date: group.statement_date,
+        suggested_snapshot_name: group.suggested_snapshot_name,
+        files: group.files.map((f: any) => f.filename),
+        match_type: group.match_result.match_type,
+        matched_snapshot: group.match_result.matched_snapshot
+          ? {
+              id: group.match_result.matched_snapshot.id,
+              snapshot_name: group.match_result.matched_snapshot.snapshot_name,
+              statement_date: group.match_result.matched_snapshot.statement_date,
+              total_networth: group.match_result.matched_snapshot.total_networth,
+            }
+          : null,
+        days_difference: group.match_result.days_difference,
+        suggested_action: group.match_result.suggested_action,
+      })),
     });
   } catch (error) {
     console.error('❌ Parse API error:', error);

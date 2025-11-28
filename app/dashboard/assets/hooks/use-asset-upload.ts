@@ -5,7 +5,22 @@
 import { useState } from 'react';
 import { ReviewAsset } from '@/app/lib/assets';
 
-interface UploadResult {
+export interface StatementDateGroup {
+  statement_date: string;
+  suggested_snapshot_name: string;
+  files: string[];
+  match_type: 'exact' | 'close' | 'none';
+  matched_snapshot: {
+    id: string;
+    snapshot_name?: string;
+    statement_date?: string;
+    total_networth: number;
+  } | null;
+  days_difference?: number;
+  suggested_action: 'merge' | 'prompt' | 'create_new';
+}
+
+export interface UploadResult {
   assets: ReviewAsset[];
   summary: {
     total_files: number;
@@ -22,6 +37,7 @@ interface UploadResult {
       error?: string;
     }[];
   };
+  statement_date_groups?: StatementDateGroup[];
 }
 
 export function useAssetUpload() {
@@ -48,7 +64,15 @@ export function useAssetUpload() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (parseError) {
+          console.error('Failed to parse error response:', parseError);
+          console.error('Response status:', response.status, response.statusText);
+          throw new Error(`Upload failed with status ${response.status}: ${response.statusText}`);
+        }
+
         console.error('Upload API error:', errorData);
 
         // Include detailed error information if available

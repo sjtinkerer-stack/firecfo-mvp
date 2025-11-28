@@ -12,6 +12,14 @@ export type SecurityType = 'equity' | 'mutual_fund' | 'bond' | 'etf' | 'commodit
 
 export type VerificationSource = 'api_lookup' | 'ai_classification' | 'manual' | 'none';
 
+export type StatementDateConfidence = 'high' | 'medium' | 'low' | 'manual';
+
+export type StatementDateSource =
+  | 'document_content'
+  | 'filename'
+  | 'user_input'
+  | 'upload_timestamp';
+
 // Raw extracted asset (before classification)
 export interface RawAsset {
   asset_name: string;
@@ -25,6 +33,15 @@ export interface RawAsset {
   isin?: string; // International Securities Identification Number
   ticker_symbol?: string; // NSE/BSE ticker code
   exchange?: string; // NSE, BSE, NASDAQ, etc.
+}
+
+// Parser result with assets and statement date
+export interface ParserResult {
+  assets: RawAsset[];
+  parsed_statement_date: string | null;
+  statement_date_confidence: StatementDateConfidence;
+  statement_date_source: StatementDateSource;
+  original_date_text?: string; // Raw date string found in document
 }
 
 // Classified asset (after AI classification)
@@ -75,7 +92,11 @@ export interface SubClassMapping {
 export interface AssetSnapshot {
   id: string;
   user_id: string;
-  snapshot_date: string;
+  snapshot_date: string; // Timestamp when snapshot was created in DB
+  statement_date?: string; // Date the financial statement represents (e.g., "2024-11-30")
+  snapshot_name?: string; // User-friendly name (e.g., "November 2024")
+  statement_date_confidence?: StatementDateConfidence; // How confident we are in statement_date
+  statement_date_source?: StatementDateSource; // Where statement_date came from
   total_networth: number;
   equity_total: number;
   debt_total: number;
@@ -166,6 +187,9 @@ export interface UploadLog {
   total_tokens_used: number;
   api_cost: number;
   error_message?: string;
+  parsed_statement_date?: string; // Extracted statement date from document
+  statement_date_source?: string; // How we extracted the date
+  statement_date_confidence?: string; // Confidence in extraction
   created_at: string;
 }
 
@@ -228,15 +252,24 @@ export interface ParseFileResponse {
   success: boolean;
   assets: ReviewAsset[];
   file_info: FileUploadResult;
+  parsed_statement_date?: string; // Extracted statement date from document
+  statement_date_confidence?: StatementDateConfidence; // Confidence in extraction
+  statement_date_source?: StatementDateSource; // How we extracted the date
   error?: string;
 }
 
 export interface SaveAssetsRequest {
   assets: ClassifiedAsset[];
-  snapshot_date?: string;
+  snapshot_date?: string; // Timestamp when saving (defaults to now)
+  statement_date?: string; // Date the financial statement represents
+  statement_date_confidence?: StatementDateConfidence; // Confidence in statement_date
+  statement_date_source?: StatementDateSource; // Where statement_date came from
+  snapshot_name?: string; // User-friendly name for snapshot
   source_type: SourceType;
   source_files: string[];
   notes?: string;
+  merge_with_existing?: boolean; // Whether to merge with existing snapshot (if found)
+  target_snapshot_id?: string; // Explicitly specify snapshot to merge into
 }
 
 export interface SaveAssetsResponse {

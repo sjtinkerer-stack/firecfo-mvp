@@ -7,12 +7,12 @@
 -- Drop existing tables and functions (in reverse dependency order)
 -- ============================================================================
 
--- Drop functions first
-DROP FUNCTION IF EXISTS calculate_snapshot_weighted_return(UUID);
-DROP FUNCTION IF EXISTS get_subclass_average_return(TEXT, INTEGER);
-DROP FUNCTION IF EXISTS update_asset_updated_at();
-DROP FUNCTION IF EXISTS update_upload_log_updated_at();
-DROP FUNCTION IF EXISTS update_asset_snapshot_updated_at();
+-- Drop functions first (CASCADE to drop dependent triggers)
+DROP FUNCTION IF EXISTS calculate_snapshot_weighted_return(UUID) CASCADE;
+DROP FUNCTION IF EXISTS get_subclass_average_return(TEXT, INTEGER) CASCADE;
+DROP FUNCTION IF EXISTS update_asset_updated_at() CASCADE;
+DROP FUNCTION IF EXISTS update_upload_log_updated_at() CASCADE;
+DROP FUNCTION IF EXISTS update_asset_snapshot_updated_at() CASCADE;
 
 -- Drop tables (in reverse dependency order to avoid foreign key errors)
 DROP TABLE IF EXISTS upload_logs CASCADE;

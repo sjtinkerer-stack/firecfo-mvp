@@ -28,13 +28,17 @@ export function useAssetManagement() {
   const [error, setError] = useState<string | null>(null);
 
   /**
-   * Save reviewed assets to database
+   * Save reviewed assets to database (with snapshot merging support)
    */
   const saveAssets = useCallback(
     async (
       assets: ClassifiedAsset[],
       sourceFiles: string[],
-      notes?: string
+      notes?: string,
+      targetSnapshotId?: string,
+      mergeWithExisting?: boolean,
+      statementDate?: string,
+      snapshotName?: string
     ): Promise<SaveAssetsResult | null> => {
       setSaving(true);
       setError(null);
@@ -49,6 +53,10 @@ export function useAssetManagement() {
             assets,
             source_files: sourceFiles,
             notes,
+            target_snapshot_id: targetSnapshotId,
+            merge_with_existing: mergeWithExisting,
+            statement_date: statementDate,
+            snapshot_name: snapshotName,
           }),
         });
 
@@ -115,6 +123,86 @@ export function useAssetManagement() {
     []
   );
 
+  /**
+   * Rename snapshot
+   */
+  const renameSnapshot = useCallback(
+    async (snapshotId: string, newName: string): Promise<boolean> => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await fetch(`/api/assets/snapshots?id=${snapshotId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            snapshot_name: newName,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to rename snapshot');
+        }
+
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.error || 'Rename failed');
+        }
+
+        return true;
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+        setError(errorMessage);
+        console.error('Rename error:', err);
+        return false;
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
+  /**
+   * Delete snapshot (cascade deletes all associated assets)
+   */
+  const deleteSnapshot = useCallback(
+    async (snapshotId: string): Promise<boolean> => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await fetch(`/api/assets/snapshots?id=${snapshotId}`, {
+          method: 'DELETE',
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to delete snapshot');
+        }
+
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.error || 'Delete failed');
+        }
+
+        return true;
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+        setError(errorMessage);
+        console.error('Delete error:', err);
+        return false;
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
   const reset = useCallback(() => {
     setSaving(false);
     setLoading(false);
@@ -124,6 +212,8 @@ export function useAssetManagement() {
   return {
     saveAssets,
     listAssets,
+    renameSnapshot,
+    deleteSnapshot,
     saving,
     loading,
     error,

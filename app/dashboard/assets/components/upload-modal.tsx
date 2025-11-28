@@ -5,14 +5,13 @@
 import { useState, useRef, DragEvent, ChangeEvent } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Upload, FileText, Loader2, X, CheckCircle2, AlertTriangle } from 'lucide-react';
-import { useAssetUpload } from '../hooks/use-asset-upload';
-import { ReviewAsset } from '@/app/lib/assets';
+import { useAssetUpload, UploadResult } from '../hooks/use-asset-upload';
 import { CancelConfirmationDialog } from './cancel-confirmation-dialog';
 
 interface UploadModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (assets: ReviewAsset[], summary: any) => void;
+  onSuccess: (result: UploadResult) => void;
 }
 
 export function UploadModal({ isOpen, onClose, onSuccess }: UploadModalProps) {
@@ -79,7 +78,7 @@ export function UploadModal({ isOpen, onClose, onSuccess }: UploadModalProps) {
     const result = await uploadFiles(files);
 
     if (result) {
-      onSuccess(result.assets, result.summary);
+      onSuccess(result);
       handleClose();
     }
   };

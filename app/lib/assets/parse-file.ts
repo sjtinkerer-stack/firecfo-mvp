@@ -3,7 +3,13 @@
 import { parseCSVFromFile } from './parse-csv';
 import { parseExcelFromFile } from './parse-excel';
 import { parsePDFFromFile } from './parse-pdf';
-import { RawAsset, AssetParsingError } from './types';
+import {
+  RawAsset,
+  AssetParsingError,
+  StatementDateConfidence,
+  StatementDateSource,
+} from './types';
+import { parseStatementDateFromFilename } from './statement-date-utils';
 
 export type SupportedFileType = 'pdf' | 'csv' | 'xlsx' | 'xls';
 
@@ -85,7 +91,7 @@ export function validateFile(file: File): {
 }
 
 /**
- * Parse file and extract assets
+ * Parse file and extract assets (with statement date extraction)
  * Automatically routes to correct parser based on file type
  */
 export async function parseFile(file: File): Promise<{
@@ -93,6 +99,9 @@ export async function parseFile(file: File): Promise<{
   fileType: SupportedFileType;
   fileName: string;
   fileSize: number;
+  parsed_statement_date: string | null;
+  statement_date_confidence: StatementDateConfidence;
+  statement_date_source: StatementDateSource;
 }> {
   // Validate file
   const validation = validateFile(file);
@@ -107,21 +116,41 @@ export async function parseFile(file: File): Promise<{
 
   try {
     let assets: RawAsset[];
+    let parsed_statement_date: string | null = null;
+    let statement_date_confidence: StatementDateConfidence = 'low';
+    let statement_date_source: StatementDateSource = 'filename';
 
     // Route to appropriate parser
     switch (fileType) {
       case 'csv':
         assets = await parseCSVFromFile(file);
+        // CSV parser doesn't extract statement dates yet, use filename fallback
+        const csvDateResult = parseStatementDateFromFilename(file.name);
+        parsed_statement_date = csvDateResult.date;
+        statement_date_confidence = csvDateResult.confidence;
+        statement_date_source = csvDateResult.source;
         break;
 
       case 'xlsx':
-      case 'xls':
-        assets = await parseExcelFromFile(file);
+      case 'xls': {
+        // Excel parser returns ParserResult with statement date
+        const excelResult = await parseExcelFromFile(file);
+        assets = excelResult.assets;
+        parsed_statement_date = excelResult.parsed_statement_date;
+        statement_date_confidence = excelResult.statement_date_confidence;
+        statement_date_source = excelResult.statement_date_source;
         break;
+      }
 
-      case 'pdf':
-        assets = await parsePDFFromFile(file);
+      case 'pdf': {
+        // PDF parser returns ParserResult with statement date
+        const pdfResult = await parsePDFFromFile(file);
+        assets = pdfResult.assets;
+        parsed_statement_date = pdfResult.parsed_statement_date;
+        statement_date_confidence = pdfResult.statement_date_confidence;
+        statement_date_source = pdfResult.statement_date_source;
         break;
+      }
 
       default:
         throw new AssetParsingError(`Unsupported file type: ${fileType}`, file.name);
@@ -132,6 +161,9 @@ export async function parseFile(file: File): Promise<{
       fileType,
       fileName: file.name,
       fileSize: file.size,
+      parsed_statement_date,
+      statement_date_confidence,
+      statement_date_source,
     };
   } catch (error) {
     if (error instanceof AssetParsingError) {
@@ -147,7 +179,7 @@ export async function parseFile(file: File): Promise<{
 }
 
 /**
- * Parse multiple files in batch
+ * Parse multiple files in batch (with statement date extraction)
  */
 export async function parseFiles(
   files: File[],
@@ -162,6 +194,9 @@ export async function parseFiles(
     fileType: SupportedFileType;
     success: boolean;
     error?: string;
+    parsed_statement_date?: string | null;
+    statement_date_confidence?: StatementDateConfidence;
+    statement_date_source?: StatementDateSource;
   }[];
   totalAssets: number;
   successCount: number;
@@ -179,6 +214,9 @@ export async function parseFiles(
     fileType: SupportedFileType;
     success: boolean;
     error?: string;
+    parsed_statement_date?: string | null;
+    statement_date_confidence?: StatementDateConfidence;
+    statement_date_source?: StatementDateSource;
   }[] = [];
 
   let totalAssets = 0;
@@ -196,6 +234,9 @@ export async function parseFiles(
         assets: result.assets,
         fileType: result.fileType,
         success: true,
+        parsed_statement_date: result.parsed_statement_date,
+        statement_date_confidence: result.statement_date_confidence,
+        statement_date_source: result.statement_date_source,
       });
       totalAssets += result.assets.length;
       successCount++;

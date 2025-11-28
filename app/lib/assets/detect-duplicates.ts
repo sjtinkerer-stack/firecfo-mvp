@@ -28,9 +28,92 @@ export interface DuplicateDetectionConfig {
 const DEFAULT_CONFIG: DuplicateDetectionConfig = {
   similarityThreshold: 85,
   valueTolerancePercentage: 5,
-  nameWeight: 0.7,
-  valueWeight: 0.3,
+  nameWeight: 0.9, // Prioritize name matching over value
+  valueWeight: 0.1, // Minimize impact of value differences
 };
+
+/**
+ * Stopwords for Indian financial context
+ * Common terms that should be filtered out before token matching to reduce false positives
+ */
+const STOPWORDS = new Set([
+  // Geographic
+  'india',
+  'indian',
+  'mumbai',
+  'delhi',
+  'bangalore',
+  'bengaluru',
+
+  // Corporate suffixes
+  'limited',
+  'ltd',
+  'pvt',
+  'private',
+  'company',
+  'co',
+  'corp',
+  'corporation',
+  'incorporated',
+  'inc',
+
+  // Financial terms
+  'fund',
+  'funds',
+  'mutual',
+  'mf',
+  'mutualfund',
+  'etf',
+  'exchange',
+  'traded',
+  'trust',
+  'asset',
+  'assets',
+  'management',
+  'amc',
+  'securities',
+  'finance',
+  'financial',
+  'investment',
+  'investments',
+  'equity',
+  'debt',
+  'bond',
+  'bonds',
+
+  // Plan types
+  'growth',
+  'dividend',
+  'regular',
+  'direct',
+  'plan',
+  'option',
+  'scheme',
+
+  // Common words
+  'the',
+  'and',
+  'or',
+  'of',
+  'in',
+  'at',
+  'to',
+  'for',
+  'with',
+  'from',
+]);
+
+/**
+ * Filter out stopwords from a token array
+ * @param tokens - Array of tokens to filter
+ * @returns Filtered array with stopwords removed
+ */
+function filterStopwords(tokens: string[]): string[] {
+  return tokens.filter(token => {
+    const lowerToken = token.toLowerCase();
+    return !STOPWORDS.has(lowerToken) && lowerToken.length > 0;
+  });
+}
 
 /**
  * Simple string similarity calculation
@@ -96,8 +179,89 @@ function tokenSortRatio(str1: string, str2: string): number {
 }
 
 /**
+ * Common abbreviations in Indian financial instruments
+ */
+const ABBREVIATION_MAP: Record<string, string> = {
+  'nip': 'nippon',
+  'mf': 'mutual fund',
+  'mutualfund': 'mutual fund',
+  'etf': 'exchange traded fund',
+  'ltd': 'limited',
+  'pvt': 'private',
+  'co': 'company',
+  'corp': 'corporation',
+  'fin': 'finance',
+  'finserv': 'financial services',
+  'invt': 'investment',
+  'inv': 'investment',
+  'mgmt': 'management',
+  'sec': 'securities',
+  'svc': 'services',
+  'svcs': 'services',
+  'tech': 'technology',
+  'hdfc': 'housing development finance corporation',
+  'icici': 'industrial credit and investment corporation of india',
+  'sbi': 'state bank of india',
+  'lic': 'life insurance corporation',
+  'pnb': 'punjab national bank',
+  'uti': 'unit trust of india',
+  'dsp': 'dsp',
+  'amc': 'asset management company',
+};
+
+/**
+ * Expand common abbreviations in text
+ */
+function expandAbbreviations(text: string): string {
+  let expanded = text.toLowerCase();
+
+  // Replace each abbreviation with its full form
+  Object.entries(ABBREVIATION_MAP).forEach(([abbrev, full]) => {
+    // Match whole words only (with word boundaries)
+    const regex = new RegExp(`\\b${abbrev}\\b`, 'gi');
+    expanded = expanded.replace(regex, full);
+  });
+
+  return expanded;
+}
+
+/**
+ * Calculate common token ratio between two strings
+ * Returns percentage of common tokens relative to the smaller set
+ * Now filters out stopwords and requires minimum unique token matches
+ */
+function calculateCommonTokenRatio(str1: string, str2: string): number {
+  // Tokenize and filter stopwords
+  const tokens1 = str1.toLowerCase().split(/\s+/).filter(t => t.length > 0);
+  const tokens2 = str2.toLowerCase().split(/\s+/).filter(t => t.length > 0);
+
+  // Remove stopwords from both token sets
+  const filteredTokens1 = filterStopwords(tokens1);
+  const filteredTokens2 = filterStopwords(tokens2);
+
+  if (filteredTokens1.length === 0 || filteredTokens2.length === 0) return 0;
+
+  // Find common tokens (after stopword filtering)
+  const set1 = new Set(filteredTokens1);
+  const set2 = new Set(filteredTokens2);
+  const commonTokens = filteredTokens1.filter(token => set2.has(token));
+
+  // Require at least 2 unique (non-stopword) tokens to match
+  // This prevents false positives like "NIPPON INDIA..." matching "Polycab India"
+  if (commonTokens.length < 2) {
+    return 0;
+  }
+
+  // Calculate ratio relative to smaller set
+  const minTokenCount = Math.min(filteredTokens1.length, filteredTokens2.length);
+  const ratio = (commonTokens.length / minTokenCount) * 100;
+
+  return ratio;
+}
+
+/**
  * Calculate similarity score between two asset names
- * Uses token sort ratio for better matching of reordered words
+ * Uses multiple strategies: token sort ratio + abbreviation expansion + common token ratio
  */
 function calculateNameSimilarity(name1: string, name2: string): number {
   // Normalize names: lowercase, remove special chars, trim
@@ -110,10 +274,36 @@ function calculateNameSimilarity(name1: string, name2: string): number {
   const normalizedName1 = normalize(name1);
   const normalizedName2 = normalize(name2);
 
-  // Use token sort ratio (handles word reordering)
-  const similarity = tokenSortRatio(normalizedName1, normalizedName2);
+  // Strategy 1: Direct token sort similarity
+  const directSimilarity = tokenSortRatio(normalizedName1, normalizedName2);
 
-  return similarity;
+  // Strategy 2: Token sort with abbreviation expansion
+  const expandedName1 = expandAbbreviations(normalizedName1);
+  const expandedName2 = expandAbbreviations(normalizedName2);
+  const expandedSimilarity = tokenSortRatio(expandedName1, expandedName2);
+
+  // Strategy 3: Common token ratio (good for different verbosity levels)
+  const tokenRatio = calculateCommonTokenRatio(expandedName1, expandedName2);
+
+  // Use the best score from all strategies
+  const bestScore = Math.max(directSimilarity, expandedSimilarity, tokenRatio);
+
+  // Debug logging with stopword filtering info
+  const tokens1 = normalizedName1.split(/\s+/).filter(t => t.length > 0);
+  const tokens2 = normalizedName2.split(/\s+/).filter(t => t.length > 0);
+  const filteredTokens1 = filterStopwords(tokens1);
+  const filteredTokens2 = filterStopwords(tokens2);
+
+  console.log(`📊 Name similarity for "${name1}" vs "${name2}":`, {
+    direct: directSimilarity.toFixed(1),
+    expanded: expandedSimilarity.toFixed(1),
+    tokenRatio: tokenRatio.toFixed(1),
+    best: bestScore.toFixed(1),
+    tokens1: filteredTokens1.join(' '),
+    tokens2: filteredTokens2.join(' '),
+  });
+
+  return bestScore;
 }
 
 /**
@@ -244,63 +434,106 @@ export function detectDuplicatesForAsset(
 /**
  * Detect duplicates across multiple new assets
  * Also checks for duplicates within the new assets batch
+ *
+ * @param newAssets - New assets to check for duplicates
+ * @param existingAssets - Existing user assets to compare against
+ * @param config - Detection configuration
+ * @param targetSnapshotId - Optional: Only check against assets in this snapshot (for merge scenarios)
  */
 export function detectDuplicatesBatch(
   newAssets: ClassifiedAsset[],
   existingAssets: AssetForDuplicateCheck[],
-  config: DuplicateDetectionConfig = DEFAULT_CONFIG
+  config: DuplicateDetectionConfig = DEFAULT_CONFIG,
+  targetSnapshotId?: string
 ): ReviewAsset[] {
-  const reviewAssets: ReviewAsset[] = [];
+  // Filter existing assets by snapshot if targetSnapshotId is provided
+  const assetsToCheck = targetSnapshotId
+    ? existingAssets.filter((asset) => asset.snapshot_id === targetSnapshotId)
+    : existingAssets;
 
-  // Check each new asset against existing assets
+  console.log(
+    `🔍 Duplicate detection: Checking ${newAssets.length} new assets against ${assetsToCheck.length} existing assets${targetSnapshotId ? ` (snapshot: ${targetSnapshotId})` : ' (all snapshots)'}`
+  );
+
+  // Step 1: Initialize all review assets with DB matches
+  const reviewAssets: ReviewAsset[] = newAssets.map((newAsset, i) => {
+    const matches = detectDuplicatesForAsset(newAsset, assetsToCheck, config);
+
+    return {
+      ...newAsset,
+      id: `new-${i}`,
+      is_duplicate: matches.length > 0,
+      duplicate_matches: matches,
+      is_selected: matches.length === 0,
+    };
+  });
+
+  // Step 2: Detect intra-batch duplicates (bidirectional all-pairs comparison)
   for (let i = 0; i < newAssets.length; i++) {
-    const newAsset = newAssets[i];
-    const matches = detectDuplicatesForAsset(newAsset, existingAssets, config);
-
-    // Also check against previously processed new assets (intra-batch duplicates)
-    for (let j = 0; j < i; j++) {
-      const otherNewAsset = reviewAssets[j];
+    // Check against all subsequent assets (forward-looking)
+    for (let j = i + 1; j < newAssets.length; j++) {
+      const asset1 = newAssets[i];
+      const asset2 = newAssets[j];
 
       const nameSimilarity = calculateNameSimilarity(
-        newAsset.asset_name,
-        otherNewAsset.asset_name
+        asset1.asset_name,
+        asset2.asset_name
       );
 
       if (nameSimilarity >= config.similarityThreshold) {
         const valueSimilarity = calculateValueSimilarity(
-          newAsset.current_value,
-          otherNewAsset.current_value,
+          asset1.current_value,
+          asset2.current_value,
           config.valueTolerancePercentage
         );
 
         const overallScore = calculateDuplicateScore(
-          newAsset.asset_name,
-          otherNewAsset.asset_name,
-          newAsset.current_value,
-          otherNewAsset.current_value,
+          asset1.asset_name,
+          asset2.asset_name,
+          asset1.current_value,
+          asset2.current_value,
           config
         );
 
         if (overallScore >= config.similarityThreshold) {
-          matches.push({
-            existing_asset_name: otherNewAsset.asset_name,
-            existing_value: otherNewAsset.current_value,
-            existing_source: otherNewAsset.source_file || 'Current upload',
+          const matchType = getMatchType(nameSimilarity, valueSimilarity);
+
+          // Add asset2 as a match to asset1
+          if (!reviewAssets[i].duplicate_matches) {
+            reviewAssets[i].duplicate_matches = [];
+          }
+          reviewAssets[i].duplicate_matches!.push({
+            existing_asset_name: asset2.asset_name,
+            existing_value: asset2.current_value,
+            existing_source: asset2.source_file || 'Current upload',
             similarity_score: overallScore / 100,
-            match_type: getMatchType(nameSimilarity, valueSimilarity),
+            match_type: matchType,
           });
+
+          // Add asset1 as a match to asset2 (bidirectional)
+          if (!reviewAssets[j].duplicate_matches) {
+            reviewAssets[j].duplicate_matches = [];
+          }
+          reviewAssets[j].duplicate_matches!.push({
+            existing_asset_name: asset1.asset_name,
+            existing_value: asset1.current_value,
+            existing_source: asset1.source_file || 'Current upload',
+            similarity_score: overallScore / 100,
+            match_type: matchType,
+          });
+
+          // Flag both as duplicates
+          reviewAssets[i].is_duplicate = true;
+          reviewAssets[i].is_selected = false;
+          reviewAssets[j].is_duplicate = true;
+          reviewAssets[j].is_selected = false;
         }
       }
     }
-
-    reviewAssets.push({
-      ...newAsset,
-      id: `new-${i}`, // Temporary ID for review UI
-      is_duplicate: matches.length > 0,
-      duplicate_matches: matches,
-      is_selected: matches.length === 0, // Only select non-duplicates
-    });
   }
+
+  const duplicatesFound = reviewAssets.filter((a) => a.is_duplicate).length;
+  console.log(`✅ Found ${duplicatesFound} duplicates out of ${newAssets.length} assets`);
 
   return reviewAssets;
 }

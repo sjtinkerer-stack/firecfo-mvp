@@ -1,7 +1,8 @@
 // PDF file parsing using GPT-4 Vision API
 
 import OpenAI from 'openai';
-import { RawAsset, AssetParsingError } from './types';
+import { RawAsset, AssetParsingError, ParserResult, StatementDateConfidence, StatementDateSource } from './types';
+import { extractStatementDate } from './statement-date-utils';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -82,7 +83,7 @@ async function convertPDFPagesToImages(
 async function parseImageBasedPDF(
   pdfBuffer: ArrayBuffer,
   fileName: string
-): Promise<RawAsset[]> {
+): Promise<ParserResult> {
   try {
     console.log('📷 Using Vision API for scanned PDF:', fileName);
 
@@ -121,22 +122,34 @@ Important rules:
 7. Extract ISIN codes when visible (format: INE*/INF*/IN0*)
 8. Extract ticker symbols from scrip code columns
 
-Return a JSON array of assets:
-[
-  {
-    "asset_name": "Reliance Industries Ltd",
-    "current_value": 500000,
-    "quantity": 1000,
-    "purchase_price": 450000,
-    "purchase_date": "2024-01-15",
-    "isin": "INE002A01018",
-    "ticker_symbol": "RELIANCE",
-    "exchange": "NSE"
-  },
-  ...
-]
+ALSO extract the statement date:
+- Look for "As of [date]", "Statement Date", "Portfolio Valuation Date", "As on [date]"
+- Extract in YYYY-MM-DD format
+- If you find a clear statement date, return "high" confidence
+- If the date is ambiguous or inferred, return "medium" confidence
+- If no date found, return "low" confidence and null for date
 
-If no assets found, return an empty array: []`;
+Return JSON in this format:
+{
+  "assets": [
+    {
+      "asset_name": "Reliance Industries Ltd",
+      "current_value": 500000,
+      "quantity": 1000,
+      "purchase_price": 450000,
+      "purchase_date": "2024-01-15",
+      "isin": "INE002A01018",
+      "ticker_symbol": "RELIANCE",
+      "exchange": "NSE"
+    },
+    ...
+  ],
+  "statement_date": "2024-11-30",
+  "date_confidence": "high",
+  "date_source_text": "As of November 30, 2024"
+}
+
+If no assets found, return empty array. If no statement date found, use null for statement_date.`;
 
     // Build content array with text prompt + all page images
     const contentParts: any[] = [
@@ -285,6 +298,23 @@ If no assets found, return an empty array: []`;
       );
     }
 
+    // Extract statement date from Vision API response
+    const statementDate = result.statement_date || null;
+    const dateConfidenceRaw = result.date_confidence || 'low';
+    const dateSourceText = result.date_source_text || undefined;
+
+    // Map confidence values (Vision API returns strings)
+    const dateConfidence: StatementDateConfidence =
+      dateConfidenceRaw === 'high' || dateConfidenceRaw === 'medium' || dateConfidenceRaw === 'low'
+        ? dateConfidenceRaw
+        : 'low';
+
+    if (statementDate) {
+      console.log(`📅 Vision API extracted statement date: ${statementDate} (${dateConfidence} confidence)`);
+    } else {
+      console.log('📅 Vision API did not find statement date in images');
+    }
+
     // Log extraction statistics
     const assetsWithIsin = assets.filter((a) => a.isin).length;
     const assetsWithTicker = assets.filter((a) => a.ticker_symbol).length;
@@ -293,7 +323,13 @@ If no assets found, return an empty array: []`;
         `${assetsWithIsin} with ISIN, ${assetsWithTicker} with ticker`
     );
 
-    return assets;
+    return {
+      assets,
+      parsed_statement_date: statementDate,
+      statement_date_confidence: dateConfidence,
+      statement_date_source: 'document_content',
+      original_date_text: dateSourceText,
+    };
   } catch (error) {
     if (error instanceof AssetParsingError) {
       throw error;
@@ -315,7 +351,7 @@ If no assets found, return an empty array: []`;
 export async function parsePDF(
   pdfBuffer: ArrayBuffer,
   fileName: string
-): Promise<RawAsset[]> {
+): Promise<ParserResult> {
   try {
     // STEP 1: Try text extraction first
     const pdfText = await extractTextFromPDF(pdfBuffer);
@@ -330,6 +366,14 @@ export async function parsePDF(
     }
 
     console.log('📝 PDF contains extractable text, using standard parsing...');
+
+    // STEP 2.5: Extract statement date from PDF text
+    const statementDateResult = await extractStatementDate(pdfText, fileName, openai);
+    if (statementDateResult.date) {
+      console.log(`📅 Extracted statement date: ${statementDateResult.date} (${statementDateResult.confidence} confidence from ${statementDateResult.source})`);
+    } else {
+      console.log('📅 No statement date found in PDF content');
+    }
 
     // Use GPT-4o to extract structured data from text
     const systemPrompt = `You are an expert at extracting asset information from Indian financial statements (broker statements, bank statements, mutual fund statements, etc.).
@@ -467,7 +511,13 @@ If no assets found, return an empty array: []`;
       );
     }
 
-    return assets;
+    return {
+      assets,
+      parsed_statement_date: statementDateResult.date,
+      statement_date_confidence: statementDateResult.confidence,
+      statement_date_source: statementDateResult.source,
+      original_date_text: statementDateResult.original_text,
+    };
   } catch (error) {
     if (error instanceof AssetParsingError) {
       throw error;
@@ -484,7 +534,7 @@ If no assets found, return an empty array: []`;
 /**
  * Parse PDF from File object (for browser uploads)
  */
-export async function parsePDFFromFile(file: File): Promise<RawAsset[]> {
+export async function parsePDFFromFile(file: File): Promise<ParserResult> {
   const arrayBuffer = await file.arrayBuffer();
   return parsePDF(arrayBuffer, file.name);
 }
@@ -575,7 +625,7 @@ export async function parsePDFMultiPage(
   pdfBuffer: ArrayBuffer,
   fileName: string,
   maxPages: number = 10
-): Promise<RawAsset[]> {
+): Promise<ParserResult> {
   try {
     // Dynamic import for CommonJS module compatibility
     const pdfParseModule = await import('pdf-parse');

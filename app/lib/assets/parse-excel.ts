@@ -2,7 +2,8 @@
 
 import * as XLSX from 'xlsx';
 import OpenAI from 'openai';
-import { RawAsset, AssetParsingError } from './types';
+import { RawAsset, AssetParsingError, ParserResult, StatementDateConfidence, StatementDateSource } from './types';
+import { extractStatementDate, parseStatementDateFromFilename } from './statement-date-utils';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -132,13 +133,27 @@ function findHeaderRow(rawData: any[][]): number {
 }
 
 /**
+ * Helper function to wrap assets into ParserResult with filename-based date
+ */
+function wrapAssetsWithFilenameDate(assets: RawAsset[], fileName: string): ParserResult {
+  const filenameDate = parseStatementDateFromFilename(fileName);
+  return {
+    assets,
+    parsed_statement_date: filenameDate.date,
+    statement_date_confidence: filenameDate.confidence,
+    statement_date_source: filenameDate.source,
+    original_date_text: filenameDate.original_text,
+  };
+}
+
+/**
  * Parse Excel file and extract assets
  * Supports .xlsx and .xls formats
  */
 export async function parseExcel(
   fileBuffer: ArrayBuffer,
   fileName: string
-): Promise<RawAsset[]> {
+): Promise<ParserResult> {
   try {
     // Read workbook
     const workbook = XLSX.read(fileBuffer, { type: 'array' });
@@ -214,7 +229,7 @@ export async function parseExcel(
           console.log(
             `✅ Successfully parsed ${assets.length} assets without headers (skipped ${skippedInHeaderless.length} rows)`
           );
-          return assets;
+          return wrapAssetsWithFilenameDate(assets, fileName);
         }
       }
 
@@ -383,7 +398,7 @@ export async function parseExcel(
       );
     }
 
-    return assets;
+    return wrapAssetsWithFilenameDate(assets, fileName);
   } catch (error) {
     if (error instanceof AssetParsingError) {
       throw error;
@@ -400,7 +415,7 @@ export async function parseExcel(
 /**
  * Parse Excel from File object (for browser uploads)
  */
-export async function parseExcelFromFile(file: File): Promise<RawAsset[]> {
+export async function parseExcelFromFile(file: File): Promise<ParserResult> {
   const arrayBuffer = await file.arrayBuffer();
   return parseExcel(arrayBuffer, file.name);
 }
@@ -519,7 +534,7 @@ export async function parseExcelSheet(
   fileBuffer: ArrayBuffer,
   fileName: string,
   sheetName: string
-): Promise<RawAsset[]> {
+): Promise<ParserResult> {
   try {
     const workbook = XLSX.read(fileBuffer, { type: 'array' });
 
@@ -598,7 +613,7 @@ export async function parseExcelSheet(
       );
     }
 
-    return assets;
+    return wrapAssetsWithFilenameDate(assets, fileName);
   } catch (error) {
     if (error instanceof AssetParsingError) {
       throw error;
@@ -620,7 +635,7 @@ async function parseExcelWithAI(
   fileBuffer: ArrayBuffer,
   fileName: string,
   rawData: any[][]
-): Promise<RawAsset[]> {
+): Promise<ParserResult> {
   try {
     // Convert raw data to text format for AI
     let excelText = '';
@@ -669,22 +684,34 @@ Important rules:
 7. Handle unusual table structures - data may not have clear column headers
 8. IMPORTANT: If ISIN, ticker, or exchange codes are present, extract them - they are critical for accurate classification
 
-Return a JSON array of assets:
-[
-  {
-    "asset_name": "Reliance Industries Ltd",
-    "current_value": 500000,
-    "quantity": 1000,
-    "purchase_price": 450000,
-    "purchase_date": "2024-01-15",
-    "isin": "INE002A01018",
-    "ticker_symbol": "RELIANCE",
-    "exchange": "NSE"
-  },
-  ...
-]
+ALSO extract the statement date:
+- Look for "As of [date]", "Statement Date", "Portfolio Valuation Date", "As on [date]", or similar in the data
+- Extract in YYYY-MM-DD format
+- If you find a clear statement date, return "high" confidence
+- If the date is ambiguous or inferred, return "medium" confidence
+- If no date found, return "low" confidence and null for date
 
-If no assets found, return an empty array: []`;
+Return JSON in this format:
+{
+  "assets": [
+    {
+      "asset_name": "Reliance Industries Ltd",
+      "current_value": 500000,
+      "quantity": 1000,
+      "purchase_price": 450000,
+      "purchase_date": "2024-01-15",
+      "isin": "INE002A01018",
+      "ticker_symbol": "RELIANCE",
+      "exchange": "NSE"
+    },
+    ...
+  ],
+  "statement_date": "2024-11-30",
+  "date_confidence": "high",
+  "date_source_text": "As of November 30, 2024"
+}
+
+If no assets found, return empty array. If no statement date found, use null for statement_date.`;
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
@@ -800,8 +827,32 @@ If no assets found, return an empty array: []`;
       throw new Error('AI extracted assets but none passed validation');
     }
 
+    // Extract statement date from AI response
+    const statementDate = result.statement_date || null;
+    const dateConfidenceRaw = result.date_confidence || 'low';
+    const dateSourceText = result.date_source_text || undefined;
+
+    // Map confidence values (AI returns strings)
+    const dateConfidence: StatementDateConfidence =
+      dateConfidenceRaw === 'high' || dateConfidenceRaw === 'medium' || dateConfidenceRaw === 'low'
+        ? dateConfidenceRaw
+        : 'low';
+
+    if (statementDate) {
+      console.log(`📅 AI extracted statement date from Excel: ${statementDate} (${dateConfidence} confidence)`);
+    } else {
+      console.log('📅 AI did not find statement date in Excel data');
+    }
+
     console.log(`✅ AI successfully parsed ${assets.length} assets from Excel`);
-    return assets;
+
+    return {
+      assets,
+      parsed_statement_date: statementDate,
+      statement_date_confidence: dateConfidence,
+      statement_date_source: 'document_content',
+      original_date_text: dateSourceText,
+    };
   } catch (error) {
     console.error('AI Excel parsing failed:', error);
     throw new Error(
